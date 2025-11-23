@@ -28,7 +28,7 @@ static struct dir config_dirs[] = {
 		.path = "labwc"
 	}, {
 		.prefix = "XDG_CONFIG_DIRS",
-		.default_prefix = "/etc/xdg",
+		.default_prefix = "@TERMUX_PREFIX@/etc/xdg",
 		.path = "labwc",
 	}, {
 		.path = NULL,
@@ -45,7 +45,7 @@ static struct dir theme_dirs[] = {
 		.path = ".themes",
 	}, {
 		.prefix = "XDG_DATA_DIRS",
-		.default_prefix = "/usr/share:/usr/local/share:/opt/share",
+		.default_prefix = "@TERMUX_PREFIX@/share:@TERMUX_PREFIX@/local/share:@TERMUX_PREFIX@/opt/share",
 		.path = "themes",
 	}, {
 		.path = NULL,
