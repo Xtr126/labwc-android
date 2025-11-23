@@ -7,6 +7,7 @@
 #include "common/set.h"
 #include "input/cursor.h"
 #include "overlay.h"
+#include <wlr/config.h>
 
 #define XCURSOR_DEFAULT "left_ptr"
 #define XCURSOR_SIZE 24
@@ -281,8 +282,10 @@ struct server {
 	struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 	struct wlr_ext_foreign_toplevel_list_v1 *foreign_toplevel_list;
 
+#if WLR_HAS_DRM_BACKEND
 	struct wlr_drm_lease_v1_manager *drm_lease_manager;
 	struct wl_listener drm_lease_request;
+#endif
 
 	struct wlr_output_power_manager_v1 *output_power_manager_v1;
 	struct wl_listener output_power_manager_set_mode;

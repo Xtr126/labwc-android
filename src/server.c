@@ -11,7 +11,10 @@
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_drm.h>
+#include <wlr/config.h>
+#if WLR_HAS_DRM_BACKEND
 #include <wlr/types/wlr_drm_lease_v1.h>
+#endif
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_ext_data_control_v1.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
@@ -67,6 +70,7 @@
 #include "view.h"
 #include "workspaces.h"
 #include "xwayland.h"
+#include <wlr/config.h>
 
 #define LAB_EXT_DATA_CONTROL_VERSION 1
 #define LAB_EXT_FOREIGN_TOPLEVEL_LIST_VERSION 1
@@ -192,6 +196,7 @@ handle_sigchld(int signal, void *data)
 	return 0;
 }
 
+#if WLR_HAS_DRM_BACKEND
 static void
 handle_drm_lease_request(struct wl_listener *listener, void *data)
 {
@@ -203,6 +208,7 @@ handle_drm_lease_request(struct wl_listener *listener, void *data)
 		return;
 	}
 }
+#endif
 
 static bool
 protocol_is_privileged(const struct wl_interface *iface)
@@ -683,6 +689,7 @@ server_init(struct server *server)
 
 	session_lock_init(server);
 
+#if WLR_HAS_DRM_BACKEND
 	server->drm_lease_manager = wlr_drm_lease_v1_manager_create(
 		server->wl_display, server->backend);
 	if (server->drm_lease_manager) {
@@ -693,6 +700,7 @@ server_init(struct server *server)
 		wlr_log(WLR_DEBUG, "Failed to create wlr_drm_lease_device_v1");
 		wlr_log(WLR_INFO, "VR will not be available");
 	}
+#endif
 
 	server->output_power_manager_v1 =
 		wlr_output_power_manager_v1_create(server->wl_display);
@@ -778,10 +786,13 @@ server_finish(struct server *server)
 	wl_list_remove(&server->new_constraint.link);
 	wl_list_remove(&server->output_power_manager_set_mode.link);
 	wl_list_remove(&server->tearing_new_object.link);
+	
+	#if WLR_HAS_DRM_BACKEND
 	if (server->drm_lease_request.notify) {
 		wl_list_remove(&server->drm_lease_request.link);
 		server->drm_lease_request.notify = NULL;
 	}
+	#endif
 
 	wlr_backend_destroy(server->backend);
 	wlr_allocator_destroy(server->allocator);

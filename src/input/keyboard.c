@@ -3,7 +3,6 @@
 #include "input/keyboard.h"
 #include <assert.h>
 #include <stdlib.h>
-#include <wlr/backend/session.h>
 #include <wlr/interfaces/wlr_keyboard.h>
 #include <wlr/types/wlr_keyboard_group.h>
 #include <wlr/types/wlr_seat.h>
@@ -20,6 +19,10 @@
 #include "session-lock.h"
 #include "view.h"
 #include "workspaces.h"
+
+#if WLR_HAS_SESSION
+#include <wlr/backend/session.h>
+#endif
 
 enum lab_key_handled {
 	LAB_KEY_HANDLED_FALSE = 0,
@@ -54,7 +57,9 @@ keyboard_reset_current_keybind(void)
 static void
 change_vt(struct server *server, unsigned int vt)
 {
+#if WLR_HAS_SESSION
 	wlr_session_change_vt(server->session, vt);
+#endif
 }
 
 uint32_t

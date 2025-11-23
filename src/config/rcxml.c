@@ -662,6 +662,7 @@ fill_tablet_button_map(xmlNode *node)
 	tablet_button_mapping_add(map_from, map_to);
 }
 
+#if WLR_HAS_LIBINPUT_BACKEND
 static int
 get_accel_profile(const char *s)
 {
@@ -885,6 +886,7 @@ fill_libinput_category(xmlNode *node)
 		}
 	}
 }
+#endif
 
 static void
 set_font_attr(struct font *font, const char *nodename, const char *content)
@@ -1048,8 +1050,10 @@ entry(xmlNode *node, char *nodename, char *content)
 		fill_mouse_context(node);
 	} else if (!strcasecmp(nodename, "touch")) {
 		fill_touch(node);
+	#if WLR_HAS_LIBINPUT_BACKEND	
 	} else if (!strcasecmp(nodename, "device.libinput")) {
 		fill_libinput_category(node);
+	#endif
 	} else if (!strcasecmp(nodename, "regions")) {
 		fill_regions(node);
 	} else if (!strcasecmp(nodename, "fields.windowSwitcher")) {
@@ -1690,6 +1694,7 @@ post_processing(void)
 	if (!rc.font_osd.name) {
 		rc.font_osd.name = xstrdup("sans");
 	}
+#if WLR_HAS_LIBINPUT_BACKEND
 	if (!libinput_category_get_default()) {
 		/* So we set default values of <tap> and <scrollFactor> */
 		struct libinput_category *l = libinput_category_create();
@@ -1706,6 +1711,7 @@ post_processing(void)
 			l->scroll_factor = mouse_scroll_factor;
 		}
 	}
+#endif
 
 	int nr_workspaces = wl_list_length(&rc.workspace_config.workspaces);
 	if (nr_workspaces < rc.workspace_config.min_nr_workspaces) {
@@ -1944,12 +1950,14 @@ rcxml_finish(void)
 		zfree(touch_config);
 	}
 
+#if WLR_HAS_LIBINPUT_BACKEND
 	struct libinput_category *l, *l_tmp;
 	wl_list_for_each_safe(l, l_tmp, &rc.libinput_categories, link) {
 		wl_list_remove(&l->link);
 		zfree(l->name);
 		zfree(l);
 	}
+#endif
 
 	struct workspace *w, *w_tmp;
 	wl_list_for_each_safe(w, w_tmp, &rc.workspace_config.workspaces, link) {
