@@ -150,7 +150,7 @@ idle_callback(void *data)
 }
 
 int
-main(int argc, char *argv[])
+labwc_init(unsigned int width, unsigned int height, struct server* server, struct theme *theme, int argc, char **argv)
 {
 	char *startup_cmd = NULL;
 	char *primary_client = NULL;
@@ -246,35 +246,35 @@ main(int argc, char *argv[])
 
 	increase_nofile_limit();
 
-	struct server server = { 0 };
-	server_init(&server);
-	server_start(&server);
+	server_init(server, width, height);
+	server_start(server);
 
-	struct theme theme = { 0 };
-	theme_init(&theme, &server, rc.theme_name);
-	rc.theme = &theme;
-	server.theme = &theme;
+	theme_init(theme, server, rc.theme_name);
+	rc.theme = theme;
+	server->theme = theme;
 
-	menu_init(&server);
+	menu_init(server);
 
 	/* Delay startup of applications until the event loop is ready */
 	struct idle_ctx idle_ctx = {
-		.server = &server,
+		.server = server,
 		.primary_client = primary_client,
 		.startup_cmd = startup_cmd
 	};
-	wl_event_loop_add_idle(server.wl_event_loop, idle_callback, &idle_ctx);
+	wl_event_loop_add_idle(server->wl_event_loop, idle_callback, &idle_ctx);
 
-	wl_display_run(server.wl_display);
+	return 0;
+}
 
-	session_shutdown(&server);
+void labwc_run(struct server *server, struct theme *theme) {
+	wl_display_run(server->wl_display);
 
-	menu_finish(&server);
-	theme_finish(&theme);
+	session_shutdown(server);
+
+	menu_finish(server);
+	theme_finish(theme);
 	rcxml_finish();
 	font_finish();
 
-	server_finish(&server);
-
-	return 0;
+	server_finish(server);
 }

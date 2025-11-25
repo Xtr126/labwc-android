@@ -69,6 +69,7 @@
 #include "theme.h"
 #include "view.h"
 #include "workspaces.h"
+#include "ahb_wlr_allocator.h"
 #include "xwayland.h"
 #include <wlr/config.h>
 
@@ -394,8 +395,7 @@ handle_renderer_lost(struct wl_listener *listener, void *data)
 		return;
 	}
 
-	struct wlr_allocator *allocator =
-		wlr_allocator_autocreate(server->backend, renderer);
+	struct wlr_allocator *allocator = wlr_ahb_allocator_create();
 	if (!allocator) {
 		wlr_log(WLR_ERROR, "Unable to create allocator");
 		wlr_renderer_destroy(renderer);
@@ -427,7 +427,7 @@ handle_renderer_lost(struct wl_listener *listener, void *data)
 }
 
 void
-server_init(struct server *server)
+server_init(struct server *server, unsigned int width, unsigned int height)
 {
 	server->primary_client_pid = -1;
 	server->wl_display = wl_display_create();
@@ -466,8 +466,9 @@ server_init(struct server *server)
 	 * backend based on the current environment, such as opening an x11
 	 * window if an x11 server is running.
 	 */
-	server->backend = wlr_backend_autocreate(
-		server->wl_event_loop, &server->session);
+	server->backend = wlr_headless_backend_create(server->wl_event_loop);
+	wlr_headless_add_output(server->backend, width, height);
+
 	if (!server->backend) {
 		wlr_log(WLR_ERROR, "unable to create backend");
 		fprintf(stderr, helpful_seat_error_message);

@@ -1,20 +1,23 @@
 project(
   'labwc',
-  'c',
+  ['c', 'cpp'],
   version: '0.9.2',
   license: 'GPL-2.0-only',
   meson_version: '>=0.59.0',
   default_options: [
+    'cpp_std=c++17',
     'c_std=c11',
     'warning_level=2',
+    'b_lundef=false',
   ],
 )
 
 add_project_arguments(
   [
     '-DWLR_USE_UNSTABLE',
+    '--target=x86_64-linux-android34',
   ],
-  language: 'c',
+  language: ['c', 'cpp'],
 )
 
 cc = meson.get_compiler('c')
@@ -152,7 +155,7 @@ else
   conf_data.set('HAVE_NLS', 0)
 endif
 
-labwc_inc = include_directories('include')
+labwc_inc = include_directories(['src/android/aidl_source_output_dir/debug/out', 'include', 'src/android/libbinder_ndk_cpp', 'src/android'])
 
 subdir('protocols')
 
@@ -196,7 +199,22 @@ if dep_cmocka.found()
   subdir('t')
 endif
 
-executable(
+# Android dependencies
+sync_dep          = cc.find_library('sync')
+nativewindow_dep = cc.find_library('nativewindow')
+cutils_dep        = cc.find_library('cutils')
+android_dep       = cc.find_library('android')
+binder_ndk_dep    = cc.find_library('binder_ndk')
+
+labwc_deps += [
+  sync_dep,
+  nativewindow_dep,
+  cutils_dep,
+  android_dep,
+  binder_ndk_dep,
+]
+
+shared_library(
   meson.project_name(),
   labwc_sources,
   include_directories: [labwc_inc],

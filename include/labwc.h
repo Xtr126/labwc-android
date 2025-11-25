@@ -439,12 +439,15 @@ bool edge_from_cursor(struct seat *seat, struct output **dest_output,
 
 void handle_tearing_new_object(struct wl_listener *listener, void *data);
 
-void server_init(struct server *server);
+void server_init(struct server *server, unsigned int width, unsigned int height);
 void server_start(struct server *server);
 void server_finish(struct server *server);
 
 void create_constraint(struct wl_listener *listener, void *data);
 void constrain_cursor(struct server *server, struct wlr_pointer_constraint_v1
 	*constraint);
+
+int labwc_init(unsigned int width, unsigned int height, struct server* server, struct theme *theme, int argc, char **argv);
+void labwc_run(struct server *server, struct theme *theme);
 
 #endif /* LABWC_H */
