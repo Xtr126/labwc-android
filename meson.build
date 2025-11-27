@@ -198,7 +198,7 @@ if dep_cmocka.found()
   subdir('t')
 endif
 
-# Android dependencies
+##### Android dependencies #####
 sync_dep          = cc.find_library('sync')
 nativewindow_dep = cc.find_library('nativewindow')
 cutils_dep        = cc.find_library('cutils')
@@ -214,6 +214,7 @@ labwc_deps += [
 link_args += [
   '/system/lib64/libandroid.so',
 ]
+################################
 
 shared_library(
   meson.project_name(),
