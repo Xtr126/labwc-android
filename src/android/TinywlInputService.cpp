@@ -9,6 +9,7 @@
 #include <wayland-server-protocol.h>
 #include <sys/eventfd.h>
 #include "TinywlInputService.hpp"
+#include <android/input.h>
 
 extern "C" {
   #include "view.h"
@@ -18,7 +19,27 @@ extern "C" {
   #include <wlr/util/log.h>
 }
 
-extern float PointerCoords_getAxisValue(const aidl::android::hardware::input::common::PointerCoords& coords, int32_t axis);
+
+static float PointerCoords_getAxisValue(const aidl::android::hardware::input::common::PointerCoords& coords, int32_t axis) {
+    struct BitSet64 {
+        uint64_t value;
+
+        inline BitSet64() : value(0ULL) { }
+
+        // Gets the value associated with a particular bit index.
+        static inline uint64_t valueForBit(uint32_t n) { return 0x8000000000000000ULL >> n; }
+
+        static inline bool hasBit(uint64_t value, uint32_t n) { return value & valueForBit(n); }
+
+        static inline uint32_t getIndexOfBit(uint64_t value, uint32_t n) {
+            return static_cast<uint32_t>(__builtin_popcountll(value & ~(0xffffffffffffffffULL >> n)));
+        }
+    };
+    if (axis < 0 || axis > AMOTION_EVENT_MAXIMUM_VALID_AXIS_VALUE || !BitSet64::hasBit(coords.bits, axis)){
+        return 0;
+    }
+    return coords.values[BitSet64::getIndexOfBit(coords.bits, axis)];
+}
 
 namespace tinywl {
 

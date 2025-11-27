@@ -8,7 +8,6 @@ project(
     'cpp_std=c++17',
     'c_std=c11',
     'warning_level=2',
-    'b_lundef=false',
   ],
 )
 
@@ -203,15 +202,17 @@ endif
 sync_dep          = cc.find_library('sync')
 nativewindow_dep = cc.find_library('nativewindow')
 cutils_dep        = cc.find_library('cutils')
-android_dep       = cc.find_library('android')
 binder_ndk_dep    = cc.find_library('binder_ndk')
 
 labwc_deps += [
   sync_dep,
   nativewindow_dep,
   cutils_dep,
-  android_dep,
   binder_ndk_dep,
+]
+
+link_args += [
+  '/system/lib64/libandroid.so',
 ]
 
 shared_library(
