@@ -2480,6 +2480,7 @@ handle_map(struct wl_listener *listener, void *data)
 	} else {
 		view->impl->map(view);
 	}
+	view->server->callbacks.view_add(view, view->server->callbacks.data);
 }
 
 static void
@@ -2487,6 +2488,7 @@ handle_unmap(struct wl_listener *listener, void *data)
 {
 	struct view *view = wl_container_of(listener, view, mappable.unmap);
 	view->impl->unmap(view, /* client_request */ true);
+	view->server->callbacks.view_remove(view, view->server->callbacks.data);
 }
 
 /*

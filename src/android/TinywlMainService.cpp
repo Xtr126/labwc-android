@@ -70,9 +70,9 @@ namespace tinywl {
     }
 
     void registerXdgTopLevelCallback() {
-/*         server.callbacks.data = this;
+        server.callbacks.data = this;
 
-        server.callbacks.xdg_toplevel_add = [](struct view *view, void* data) {
+        server.callbacks.view_add = [](struct view *view, void* data) {
           auto thiz = reinterpret_cast<TinywlMainService *>(data);
           std::string appId;
           std::string title;
@@ -90,7 +90,7 @@ namespace tinywl {
           thiz->mCallback->addXdgTopLevel(appId, title, (long)view, WlrBox_from_wlr_box(&view->pending));
         };
 
-        server.callbacks.xdg_toplevel_remove = [](struct view *view, void* data) {
+        server.callbacks.view_remove = [](struct view *view, void* data) {
           auto thiz = reinterpret_cast<TinywlMainService *>(data);
           std::lock_guard<std::mutex> lock(thiz->mutex_);
           thiz->views.erase(view);
@@ -112,7 +112,7 @@ namespace tinywl {
               title,
               (long)view);          
         };
-         */
+        
     }
 
     const std::shared_ptr<TinywlInputService> mInputService = ndk::SharedRefBase::make<tinywl::TinywlInputService>();

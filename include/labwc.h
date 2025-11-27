@@ -321,6 +321,13 @@ struct server {
 	struct sfdo *sfdo;
 
 	pid_t primary_client_pid;
+
+	struct callbacks {
+		void *data;
+		void (*view_add)(struct view *view, void *data);
+		void (*view_remove)(struct view *view, void *data);
+	} callbacks;
+
 };
 
 void xdg_popup_create(struct view *view, struct wlr_xdg_popup *wlr_popup);
