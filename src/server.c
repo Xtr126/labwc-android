@@ -476,8 +476,9 @@ server_init(struct server *server, unsigned int width, unsigned int height)
 	}
 
 	/* Create headless backend to enable adding virtual outputs later on */
-	wlr_multi_for_each_backend(server->backend,
-		get_headless_backend, &server->headless.backend);
+	// wlr_multi_for_each_backend(server->backend,
+	// 	get_headless_backend, &server->headless.backend);	
+	server->headless.backend = server->backend;
 
 	if (!server->headless.backend) {
 		wlr_log(WLR_DEBUG, "manually creating headless backend");
@@ -491,7 +492,7 @@ server_init(struct server *server, unsigned int width, unsigned int height)
 		wlr_log(WLR_ERROR, "unable to create headless backend");
 		exit(EXIT_FAILURE);
 	}
-	wlr_multi_backend_add(server->backend, server->headless.backend);
+	// wlr_multi_backend_add(server->backend, server->headless.backend);
 
 	/*
 	 * If we don't populate headless backend with a virtual output (that we
@@ -546,8 +547,7 @@ server_init(struct server *server, unsigned int width, unsigned int height)
 	 * the renderer and the backend. It handles the buffer creation,
 	 * allowing wlroots to render onto the screen
 	 */
-	server->allocator = wlr_allocator_autocreate(
-		server->backend, server->renderer);
+	server->allocator = wlr_ahb_allocator_create();
 	if (!server->allocator) {
 		wlr_log(WLR_ERROR, "unable to create allocator");
 		exit(EXIT_FAILURE);

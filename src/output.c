@@ -40,6 +40,7 @@
 #include "session-lock.h"
 #include "view.h"
 #include "xwayland.h"
+#include "ahb_wlr_allocator.h"
 
 bool
 output_get_tearing_allowance(struct output *output)
@@ -391,9 +392,10 @@ static void
 configure_new_output(struct server *server, struct output *output)
 {
 	struct wlr_output *wlr_output = output->wlr_output;
-
 	wlr_log(WLR_DEBUG, "enable output %s", wlr_output->name);
 	wlr_output_state_set_enabled(&output->pending, true);
+	wlr_output_state_set_render_format(&output->pending, AHB_FORMAT_PREFERRED_DRM);
+	output_state_commit(output);
 
 	if (!output_test_auto(wlr_output, &output->pending,
 			/* is_client_request */ false)) {
@@ -549,7 +551,7 @@ handle_new_output(struct wl_listener *listener, void *data)
 
 	wlr_scene_node_raise_to_top(&output->osd_tree->node);
 	wlr_scene_node_raise_to_top(&output->session_lock_tree->node);
-
+	
 	/*
 	 * autoEnableOutputs=no only makes sense for outputs that can be
 	 * hotplugged - currently only drm outputs. With wl/x11/headless

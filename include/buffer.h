@@ -35,7 +35,7 @@ struct lab_data_buffer {
 	bool surface_owns_data;
 	cairo_surface_t *surface;
 	void *data;
-	uint32_t format; /* currently always DRM_FORMAT_ARGB8888 */
+	uint32_t format; /* currently always AHB_FORMAT_PREFERRED_DRM */
 	size_t stride;
 	/*
 	 * The logical size of the surface in layout pixels.

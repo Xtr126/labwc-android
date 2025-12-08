@@ -32,6 +32,7 @@
 #include <wlr/util/log.h>
 #include "common/box.h"
 #include "common/mem.h"
+#include "ahb_wlr_allocator.h"
 
 static struct lab_data_buffer *data_buffer_from_buffer(
 	struct wlr_buffer *buffer);
@@ -95,7 +96,7 @@ buffer_adopt_cairo_surface(cairo_surface_t *surface)
 
 	buffer->surface = surface;
 	buffer->data = cairo_image_surface_get_data(buffer->surface);
-	buffer->format = DRM_FORMAT_ARGB8888;
+	buffer->format = AHB_FORMAT_PREFERRED_DRM;
 	buffer->stride = cairo_image_surface_get_stride(buffer->surface);
 	buffer->logical_width = width;
 	buffer->logical_height = height;
@@ -142,7 +143,7 @@ buffer_create_from_data(void *pixel_data, uint32_t width, uint32_t height,
 	buffer->logical_width = width;
 	buffer->logical_height = height;
 	buffer->data = pixel_data;
-	buffer->format = DRM_FORMAT_ARGB8888;
+	buffer->format = AHB_FORMAT_PREFERRED_DRM;
 	buffer->stride = stride;
 	buffer->surface = cairo_image_surface_create_for_data(
 		pixel_data, CAIRO_FORMAT_ARGB32, width, height, stride);
@@ -161,7 +162,7 @@ buffer_create_from_wlr_buffer(struct wlr_buffer *wlr_buffer)
 		wlr_log(WLR_ERROR, "failed to access wlr_buffer");
 		return NULL;
 	}
-	if (format != DRM_FORMAT_ARGB8888) {
+	if (format != AHB_FORMAT_PREFERRED_DRM) {
 		/* TODO: support other formats */
 		wlr_buffer_end_data_ptr_access(wlr_buffer);
 		wlr_log(WLR_ERROR, "cannot create buffer: format=%d", format);

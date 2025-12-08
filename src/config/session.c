@@ -211,7 +211,11 @@ should_update_activation(struct server *server)
 
 	/* With no valid preference, update when a DRM backend is in use */
 	bool have_drm = false;
+	
+	#if WLR_HAS_DRM_BACKEND
 	wlr_multi_for_each_backend(server->backend, backend_check_drm, &have_drm);
+	#endif
+
 	return have_drm;
 }
 
