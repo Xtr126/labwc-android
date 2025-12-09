@@ -2,6 +2,8 @@
 #ifndef LABWC_LIBINPUT_H
 #define LABWC_LIBINPUT_H
 
+#include <wlr/config.h>
+#if WLR_HAS_LIBINPUT_BACKEND
 #include <libinput.h>
 #include <string.h>
 #include <wayland-server-core.h>
@@ -42,4 +44,5 @@ const char *libinput_device_type_name(enum lab_libinput_device_type type);
 struct libinput_category *libinput_category_create(void);
 struct libinput_category *libinput_category_get_default(void);
 
+#endif
 #endif /* LABWC_LIBINPUT_H */

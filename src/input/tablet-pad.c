@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only
 #include "input/tablet-pad.h"
 #include <stdlib.h>
+#include <wlr/config.h>
+#if WLR_HAS_LIBINPUT_BACKEND
 #include <wlr/backend/libinput.h>
+#endif
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_tablet_pad.h>
 #include <wlr/types/wlr_tablet_v2.h>
@@ -23,6 +26,7 @@ tablet_pad_attach_tablet(struct seat *seat)
 		pad->tablet = NULL;
 	}
 
+#if WLR_HAS_LIBINPUT_BACKEND
 	/* loop over all tablets and all pads and link by device group */
 	struct drawing_tablet *tablet;
 	wl_list_for_each(tablet, &seat->tablets, link) {
@@ -56,6 +60,7 @@ tablet_pad_attach_tablet(struct seat *seat)
 			}
 		}
 	}
+#endif
 }
 
 static void

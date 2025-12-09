@@ -11,7 +11,10 @@
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_drm.h>
+#include <wlr/config.h>
+#if WLR_HAS_DRM_BACKEND
 #include <wlr/types/wlr_drm_lease_v1.h>
+#endif
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_ext_data_control_v1.h>
 #include <wlr/types/wlr_ext_foreign_toplevel_list_v1.h>
@@ -66,7 +69,9 @@
 #include "theme.h"
 #include "view.h"
 #include "workspaces.h"
+#include "ahb_wlr_allocator.h"
 #include "xwayland.h"
+#include <wlr/config.h>
 
 #define LAB_EXT_DATA_CONTROL_VERSION 1
 #define LAB_EXT_FOREIGN_TOPLEVEL_LIST_VERSION 1
@@ -192,6 +197,7 @@ handle_sigchld(int signal, void *data)
 	return 0;
 }
 
+#if WLR_HAS_DRM_BACKEND
 static void
 handle_drm_lease_request(struct wl_listener *listener, void *data)
 {
@@ -203,6 +209,7 @@ handle_drm_lease_request(struct wl_listener *listener, void *data)
 		return;
 	}
 }
+#endif
 
 static bool
 protocol_is_privileged(const struct wl_interface *iface)
@@ -389,8 +396,7 @@ handle_renderer_lost(struct wl_listener *listener, void *data)
 		return;
 	}
 
-	struct wlr_allocator *allocator =
-		wlr_allocator_autocreate(server->backend, renderer);
+	struct wlr_allocator *allocator = wlr_ahb_allocator_create();
 	if (!allocator) {
 		wlr_log(WLR_ERROR, "Unable to create allocator");
 		wlr_renderer_destroy(renderer);
@@ -422,7 +428,7 @@ handle_renderer_lost(struct wl_listener *listener, void *data)
 }
 
 void
-server_init(struct server *server)
+server_init(struct server *server, unsigned int width, unsigned int height)
 {
 	server->primary_client_pid = -1;
 	server->wl_display = wl_display_create();
@@ -461,8 +467,9 @@ server_init(struct server *server)
 	 * backend based on the current environment, such as opening an x11
 	 * window if an x11 server is running.
 	 */
-	server->backend = wlr_backend_autocreate(
-		server->wl_event_loop, &server->session);
+	server->backend = wlr_headless_backend_create(server->wl_event_loop);
+	wlr_headless_add_output(server->backend, width, height);
+
 	if (!server->backend) {
 		wlr_log(WLR_ERROR, "unable to create backend");
 		fprintf(stderr, helpful_seat_error_message);
@@ -470,8 +477,9 @@ server_init(struct server *server)
 	}
 
 	/* Create headless backend to enable adding virtual outputs later on */
-	wlr_multi_for_each_backend(server->backend,
-		get_headless_backend, &server->headless.backend);
+	// wlr_multi_for_each_backend(server->backend,
+	// 	get_headless_backend, &server->headless.backend);	
+	server->headless.backend = server->backend;
 
 	if (!server->headless.backend) {
 		wlr_log(WLR_DEBUG, "manually creating headless backend");
@@ -485,7 +493,7 @@ server_init(struct server *server)
 		wlr_log(WLR_ERROR, "unable to create headless backend");
 		exit(EXIT_FAILURE);
 	}
-	wlr_multi_backend_add(server->backend, server->headless.backend);
+	// wlr_multi_backend_add(server->backend, server->headless.backend);
 
 	/*
 	 * If we don't populate headless backend with a virtual output (that we
@@ -540,8 +548,7 @@ server_init(struct server *server)
 	 * the renderer and the backend. It handles the buffer creation,
 	 * allowing wlroots to render onto the screen
 	 */
-	server->allocator = wlr_allocator_autocreate(
-		server->backend, server->renderer);
+	server->allocator = wlr_ahb_allocator_create();
 	if (!server->allocator) {
 		wlr_log(WLR_ERROR, "unable to create allocator");
 		exit(EXIT_FAILURE);
@@ -685,6 +692,7 @@ server_init(struct server *server)
 
 	session_lock_init(server);
 
+#if WLR_HAS_DRM_BACKEND
 	server->drm_lease_manager = wlr_drm_lease_v1_manager_create(
 		server->wl_display, server->backend);
 	if (server->drm_lease_manager) {
@@ -695,6 +703,7 @@ server_init(struct server *server)
 		wlr_log(WLR_DEBUG, "Failed to create wlr_drm_lease_device_v1");
 		wlr_log(WLR_INFO, "VR will not be available");
 	}
+#endif
 
 	server->output_power_manager_v1 =
 		wlr_output_power_manager_v1_create(server->wl_display);
@@ -780,10 +789,13 @@ server_finish(struct server *server)
 	wl_list_remove(&server->new_constraint.link);
 	wl_list_remove(&server->output_power_manager_set_mode.link);
 	wl_list_remove(&server->tearing_new_object.link);
+	
+	#if WLR_HAS_DRM_BACKEND
 	if (server->drm_lease_request.notify) {
 		wl_list_remove(&server->drm_lease_request.link);
 		server->drm_lease_request.notify = NULL;
 	}
+	#endif
 
 	wlr_backend_destroy(server->backend);
 	wlr_allocator_destroy(server->allocator);

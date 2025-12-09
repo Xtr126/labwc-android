@@ -7,6 +7,7 @@
 #include "common/set.h"
 #include "input/cursor.h"
 #include "overlay.h"
+#include <wlr/config.h>
 
 #define XCURSOR_DEFAULT "left_ptr"
 #define XCURSOR_SIZE 24
@@ -282,8 +283,10 @@ struct server {
 	struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 	struct wlr_ext_foreign_toplevel_list_v1 *foreign_toplevel_list;
 
+#if WLR_HAS_DRM_BACKEND
 	struct wlr_drm_lease_v1_manager *drm_lease_manager;
 	struct wl_listener drm_lease_request;
+#endif
 
 	struct wlr_output_power_manager_v1 *output_power_manager_v1;
 	struct wl_listener output_power_manager_set_mode;
@@ -320,6 +323,14 @@ struct server {
 	struct sfdo *sfdo;
 
 	pid_t primary_client_pid;
+
+	struct callbacks {
+		void *data;
+		void (*view_add)(struct view *view, void *data);
+		void (*view_remove)(struct view *view, void *data);
+		void (*view_commit)(struct view *view);
+	} callbacks;
+
 };
 
 void xdg_popup_create(struct view *view, struct wlr_xdg_popup *wlr_popup);
@@ -436,12 +447,21 @@ bool edge_from_cursor(struct seat *seat, struct output **dest_output,
 
 void handle_tearing_new_object(struct wl_listener *listener, void *data);
 
-void server_init(struct server *server);
+void server_init(struct server *server, unsigned int width, unsigned int height);
 void server_start(struct server *server);
 void server_finish(struct server *server);
 
 void create_constraint(struct wl_listener *listener, void *data);
 void constrain_cursor(struct server *server, struct wlr_pointer_constraint_v1
 	*constraint);
+
+struct idle_ctx {
+	struct server *server;
+	const char *primary_client;
+	const char *startup_cmd;
+};
+
+struct idle_ctx labwc_init(unsigned int width, unsigned int height, struct server* server, struct theme *theme, int argc, char **argv);
+void labwc_run(struct server *server, struct theme *theme, struct idle_ctx* idle_ctx);
 
 #endif /* LABWC_H */

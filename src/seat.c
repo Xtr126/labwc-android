@@ -2,7 +2,10 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <strings.h>
+#include <wlr/config.h>
+#if WLR_HAS_LIBINPUT_BACKEND
 #include <wlr/backend/libinput.h>
+#endif
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_input_device.h>
 #include <wlr/types/wlr_keyboard.h>
@@ -48,6 +51,7 @@ input_device_destroy(struct wl_listener *listener, void *data)
 	free(input);
 }
 
+#if WLR_HAS_LIBINPUT_BACKEND
 static enum lab_libinput_device_type
 device_type_from_wlr_device(struct wlr_input_device *wlr_input_device)
 {
@@ -71,12 +75,14 @@ device_type_from_wlr_device(struct wlr_input_device *wlr_input_device)
 
 	return LAB_LIBINPUT_DEVICE_NON_TOUCH;
 }
+#endif
 
 /*
  * Get applicable profile (category) by matching first by name and secondly be
  * type (e.g. 'touch' and 'non-touch'). If not suitable match is found based on
  * those two criteria we fallback on 'default'.
  */
+#if WLR_HAS_LIBINPUT_BACKEND
 static struct libinput_category *
 get_category(struct wlr_input_device *device)
 {
@@ -101,6 +107,7 @@ get_category(struct wlr_input_device *device)
 	/* Use default profile as a fallback */
 	return libinput_category_get_default();
 }
+#endif
 
 static void
 configure_libinput(struct wlr_input_device *wlr_input_device)
@@ -130,6 +137,10 @@ configure_libinput(struct wlr_input_device *wlr_input_device)
 	struct input *input = wlr_input_device->data;
 	assert(input);  /* Check the caller remembered to set this! */
 
+#if !WLR_HAS_LIBINPUT_BACKEND
+        input->scroll_factor = 1.0;
+        return;
+#else
 	/* Set scroll factor to 1.0 for Wayland/X11 backends or virtual pointers */
 	if (!wlr_input_device_is_libinput(wlr_input_device)) {
 		input->scroll_factor = 1.0;
@@ -347,6 +358,7 @@ configure_libinput(struct wlr_input_device *wlr_input_device)
 
 	wlr_log(WLR_INFO, "scroll factor configured (%g)", dc->scroll_factor);
 	input->scroll_factor = dc->scroll_factor;
+#endif
 }
 
 static struct wlr_output *

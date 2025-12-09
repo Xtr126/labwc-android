@@ -7,6 +7,7 @@
 #include <wayland-util.h>
 #include <wlr/util/box.h>
 #include <xkbcommon/xkbcommon.h>
+#include "buffer_presenter.h"
 #include "common/edge.h"
 #include "config.h"
 #include "config/types.h"
@@ -272,6 +273,10 @@ struct view {
 		struct wl_signal set_icon;
 		struct wl_signal destroy;
 	} events;
+
+	/* Android */
+	BufferManager* buffer_presenter;
+	struct wlr_ahb_buffer *android_buffer;
 };
 
 struct view_query {

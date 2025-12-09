@@ -1,10 +1,11 @@
 project(
   'labwc',
-  'c',
+  ['c', 'cpp'],
   version: '0.9.2',
   license: 'GPL-2.0-only',
   meson_version: '>=0.59.0',
   default_options: [
+    'cpp_std=c++17',
     'c_std=c11',
     'warning_level=2',
   ],
@@ -13,8 +14,9 @@ project(
 add_project_arguments(
   [
     '-DWLR_USE_UNSTABLE',
+    '--target=x86_64-linux-android34',
   ],
-  language: 'c',
+  language: ['c', 'cpp'],
 )
 
 cc = meson.get_compiler('c')
@@ -71,7 +73,7 @@ xml2 = dependency('libxml-2.0')
 glib = dependency('glib-2.0')
 cairo = dependency('cairo')
 pangocairo = dependency('pangocairo')
-input = dependency('libinput', version: '>=1.14')
+input = dependency('libinput', required: false, version: '>=1.14')
 pixman = dependency('pixman-1')
 math = cc.find_library('m')
 png = dependency('libpng')
@@ -154,7 +156,7 @@ else
   conf_data.set('HAVE_NLS', 0)
 endif
 
-labwc_inc = include_directories('include')
+labwc_inc = include_directories(['src/android/aidl_source_output_dir/debug/out', 'include', 'src/android/libbinder_ndk_cpp', 'src/android'])
 
 subdir('protocols')
 
@@ -198,7 +200,25 @@ if dep_cmocka.found()
   subdir('t')
 endif
 
-executable(
+##### Android dependencies #####
+sync_dep          = cc.find_library('sync')
+nativewindow_dep = cc.find_library('nativewindow')
+cutils_dep        = cc.find_library('cutils')
+binder_ndk_dep    = cc.find_library('binder_ndk')
+
+labwc_deps += [
+  sync_dep,
+  nativewindow_dep,
+  cutils_dep,
+  binder_ndk_dep,
+]
+
+link_args += [
+  '/system/lib64/libandroid.so',
+]
+################################
+
+shared_library(
   meson.project_name(),
   labwc_sources,
   include_directories: [labwc_inc],

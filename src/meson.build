@@ -47,6 +47,7 @@ if have_libsfdo
   )
 endif
 
+subdir('android')
 subdir('common')
 subdir('config')
 subdir('cycle')

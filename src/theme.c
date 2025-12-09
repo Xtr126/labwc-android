@@ -33,6 +33,7 @@
 #include "labwc.h"
 #include "buffer.h"
 #include "ssd.h"
+#include "ahb_wlr_allocator.h"
 
 struct button {
 	const char *name;
@@ -1451,7 +1452,7 @@ shadow_edge_gradient(struct lab_data_buffer *buffer,
 		return;
 	}
 
-	assert(buffer->format == DRM_FORMAT_ARGB8888);
+	assert(buffer->format == AHB_FORMAT_PREFERRED_DRM);
 	uint8_t *pixels = buffer->data;
 
 	/* Inset portion which is obscured */
@@ -1504,7 +1505,7 @@ shadow_corner_gradient(struct lab_data_buffer *buffer, int visible_size,
 		return;
 	}
 
-	assert(buffer->format == DRM_FORMAT_ARGB8888);
+	assert(buffer->format == AHB_FORMAT_PREFERRED_DRM);
 	uint8_t *pixels = buffer->data;
 
 	/* Standard deviation normalised against the shadow width, squared */

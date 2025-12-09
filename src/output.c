@@ -10,10 +10,13 @@
 #include "output.h"
 #include <assert.h>
 #include <strings.h>
+#include <wlr/config.h>
+#if WLR_HAS_DRM_BACKEND
 #include <wlr/backend/drm.h>
+#include <wlr/types/wlr_drm_lease_v1.h>
+#endif
 #include <wlr/backend/wayland.h>
 #include <wlr/types/wlr_cursor.h>
-#include <wlr/types/wlr_drm_lease_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_management_v1.h>
@@ -37,6 +40,7 @@
 #include "session-lock.h"
 #include "view.h"
 #include "xwayland.h"
+#include "ahb_wlr_allocator.h"
 
 bool
 output_get_tearing_allowance(struct output *output)
@@ -121,12 +125,14 @@ handle_output_frame(struct wl_listener *listener, void *data)
 		return;
 	}
 
+#if WLR_HAS_SESSION
 	/*
 	 * skip painting the session when it exists but is not active.
 	 */
 	if (output->server->session && !output->server->session->active) {
 		return;
 	}
+#endif
 
 	if (!output->scene_output) {
 		/*
@@ -295,6 +301,11 @@ add_output_to_layout(struct server *server, struct output *output)
 	}
 }
 
+#if WLR_HAS_DRM_BACKEND
+#include <wlr/backend/drm.h>
+#include <wlr/types/wlr_drm_lease_v1.h>
+#endif
+
 static bool
 output_test_auto(struct wlr_output *wlr_output, struct wlr_output_state *state,
 		bool is_client_request)
@@ -381,9 +392,10 @@ static void
 configure_new_output(struct server *server, struct output *output)
 {
 	struct wlr_output *wlr_output = output->wlr_output;
-
 	wlr_log(WLR_DEBUG, "enable output %s", wlr_output->name);
 	wlr_output_state_set_enabled(&output->pending, true);
+	wlr_output_state_set_render_format(&output->pending, AHB_FORMAT_PREFERRED_DRM);
+	output_state_commit(output);
 
 	if (!output_test_auto(wlr_output, &output->pending,
 			/* is_client_request */ false)) {
@@ -485,6 +497,7 @@ handle_new_output(struct wl_listener *listener, void *data)
 		wlr_wl_output_set_app_id(wlr_output, "labwc");
 	}
 
+#if WLR_HAS_DRM_BACKEND
 	/*
 	 * We offer any display as available for lease, some apps like
 	 * gamescope want to take ownership of a display when they can
@@ -513,6 +526,7 @@ handle_new_output(struct wl_listener *listener, void *data)
 		wlr_log(WLR_DEBUG, "Not configuring non-desktop output");
 		return;
 	}
+#endif
 
 	/*
 	 * Configures the output created by the backend to use our allocator
@@ -579,14 +593,19 @@ handle_new_output(struct wl_listener *listener, void *data)
 
 	wlr_scene_node_raise_to_top(&output->cycle_osd_tree->node);
 	wlr_scene_node_raise_to_top(&output->session_lock_tree->node);
-
+	
 	/*
 	 * autoEnableOutputs=no only makes sense for outputs that can be
 	 * hotplugged - currently only drm outputs. With wl/x11/headless
 	 * it would result in no outputs being enabled at all. This check
 	 * might need tweaking if wlroots adds other output backends.
 	 */
-	if (rc.auto_enable_outputs || !wlr_output_is_drm(wlr_output)) {
+	
+	if (rc.auto_enable_outputs
+	#if WLR_HAS_DRM_BACKEND
+		 || !wlr_output_is_drm(wlr_output)
+	#endif
+	) {
 		configure_new_output(server, output);
 	}
 
@@ -1047,7 +1066,6 @@ output_get_adjacent(struct output *output, enum lab_edge edge, bool wrap)
 		new_output = wlr_output_layout_farthest_output(layout,
 			(enum wlr_direction)opposite, current_output, lx, ly);
 	}
-
 	/*
 	 * When "adjacent" output is the same as the original, there is no
 	 * adjacent

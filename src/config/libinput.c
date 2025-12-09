@@ -7,6 +7,7 @@
 #include "common/string-helpers.h"
 #include "config/rcxml.h"
 
+#if WLR_HAS_LIBINPUT_BACKEND
 static void
 libinput_category_init(struct libinput_category *l)
 {
@@ -95,3 +96,4 @@ libinput_category_get_default(void)
 	}
 	return NULL;
 }
+#endif

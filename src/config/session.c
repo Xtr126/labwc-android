@@ -8,7 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <wlr/config.h>
+#if WLR_HAS_DRM_BACKEND
 #include <wlr/backend/drm.h>
+#endif
 #include <wlr/backend/multi.h>
 #include <wlr/util/log.h>
 #include "common/buf.h"
@@ -179,9 +182,11 @@ env_dir_cleanup:
 static void
 backend_check_drm(struct wlr_backend *backend, void *is_drm)
 {
+#if WLR_HAS_DRM_BACKEND
 	if (wlr_backend_is_drm(backend)) {
 		*(bool *)is_drm = true;
 	}
+#endif
 }
 
 static bool
@@ -206,7 +211,11 @@ should_update_activation(struct server *server)
 
 	/* With no valid preference, update when a DRM backend is in use */
 	bool have_drm = false;
+	
+	#if WLR_HAS_DRM_BACKEND
 	wlr_multi_for_each_backend(server->backend, backend_check_drm, &have_drm);
+	#endif
+
 	return have_drm;
 }
 
