@@ -22,12 +22,54 @@ uint32_t android_to_drm_format(uint32_t android_format) {
         case AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM: 
             return DRM_FORMAT_XBGR8888;
 
-        // Add other formats as needed
         default:
             return DRM_FORMAT_INVALID;
     }
 }
 
+// Convert DRM format to Android format
+uint32_t drm_to_android_format(uint32_t drm_format) {
+    switch(drm_format) {
+        case DRM_FORMAT_ABGR8888: 
+            return AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
+
+        case DRM_FORMAT_ARGB8888:
+            // Colors are wrong 
+            return AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
+        
+        case DRM_FORMAT_XBGR8888: 
+            return AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM;
+
+        case DRM_FORMAT_XRGB8888:
+            // Colors are wrong  
+            return AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM;
+
+        default:
+            return 0;
+    }
+}
+
+bool drm_format_can_convert_to_android(uint32_t drm_format) {
+        switch(drm_format) {
+        case DRM_FORMAT_ABGR8888: 
+            return true;
+
+        case DRM_FORMAT_ARGB8888:
+            // Colors are wrong 
+            return true;
+        
+        case DRM_FORMAT_XBGR8888: 
+            return true;
+
+        case DRM_FORMAT_XRGB8888:
+            // Colors are wrong  
+            return true;
+
+        default:
+            return false;
+    }
+
+}
 
 // Get DMA-BUF attributes from AHardwareBuffer
 bool AHardwareBuffer_getDmabufAttributes(AHardwareBuffer *ahb, 

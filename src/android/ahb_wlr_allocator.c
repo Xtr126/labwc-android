@@ -15,7 +15,7 @@ struct wlr_ahb_buffer *get_ahb_buffer_from_buffer(struct wlr_buffer *wlr_buffer)
 
 static struct wlr_ahb_buffer *create_buffer(struct wlr_ahb_allocator *alloc,
 		int width, int height, const struct wlr_drm_format *format) {
-	assert(format->format == AHB_FORMAT_PREFERRED_DRM);
+	assert(drm_format_can_convert_to_android(format->format));
 	struct wlr_ahb_buffer *buffer = calloc(1, sizeof(*buffer));
 	if (buffer == NULL) {
 		return NULL;
@@ -25,7 +25,7 @@ static struct wlr_ahb_buffer *create_buffer(struct wlr_ahb_allocator *alloc,
         .width = width,
         .height = height,
         .layers = 1, // Single layer
-        .format = AHB_FORMAT_PREFERRED, 
+        .format = drm_to_android_format(format->format), 
         .usage = AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE | 
 				AHARDWAREBUFFER_USAGE_COMPOSER_OVERLAY | 
 				AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER

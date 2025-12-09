@@ -12,6 +12,10 @@ extern "C" {
 
 uint32_t android_to_drm_format(uint32_t android_format);
 
+uint32_t drm_to_android_format(uint32_t drm_format);
+
+bool drm_format_can_convert_to_android(uint32_t drm_format);
+
 bool AHardwareBuffer_getDmabufAttributes(AHardwareBuffer *ahb, 
                            struct wlr_dmabuf_attributes *attribs);
 
