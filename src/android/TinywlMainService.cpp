@@ -135,15 +135,21 @@ Java_com_xtr_tinywl_Tinywl_runTinywlLoop(JNIEnv *env, jclass clazz, jobjectArray
   int argc = env->GetArrayLength(args);
 
   std::vector<char*> argStrings;
-  argStrings.reserve(argc);
+  argStrings.reserve(argc + 1);  // +1 for the required NULL terminator for getopt
 
   for (int i = 0; i < argc; i++) {
       jstring jstr = (jstring)env->GetObjectArrayElement(args, i);
       const char* utf = env->GetStringUTFChars(jstr, nullptr);
-      argStrings.emplace_back(const_cast<char*>(utf));
+
+      char* copy = strdup(utf);  
+      argStrings.emplace_back(copy);
+
       env->ReleaseStringUTFChars(jstr, utf);
       env->DeleteLocalRef(jstr);
   }
+
+  // getopt requires argv[argc] == NULL
+  argStrings.push_back(nullptr);
 
   struct theme theme = { 0 };
 
