@@ -10,7 +10,6 @@
 #include <wlr/types/wlr_scene.h>
 #include <wlr/util/log.h>
 #include "action-prompt-codes.h"
-#include "action-prompt-command.h"
 #include "common/buf.h"
 #include "common/macros.h"
 #include "common/list.h"
@@ -19,17 +18,18 @@
 #include "common/spawn.h"
 #include "common/string-helpers.h"
 #include "config/rcxml.h"
+#include "cycle.h"
 #include "debug.h"
 #include "input/keyboard.h"
 #include "labwc.h"
 #include "magnifier.h"
 #include "menu/menu.h"
-#include "osd.h"
 #include "output.h"
 #include "output-virtual.h"
 #include "regions.h"
 #include "ssd.h"
 #include "theme.h"
+#include "translate.h"
 #include "view.h"
 #include "workspaces.h"
 
@@ -411,6 +411,20 @@ action_arg_from_xml_node(struct action *action, const char *nodename, const char
 		}
 		if (!strcasecmp(argument, "forceSSD")) {
 			action_arg_add_bool(action, argument, parse_bool(content, false));
+			goto cleanup;
+		}
+		break;
+	case ACTION_TYPE_RESIZE:
+		if (!strcmp(argument, "direction")) {
+			enum lab_edge edge = lab_edge_parse(content,
+				/*tiled*/ true, /*any*/ false);
+			if (edge == LAB_EDGE_NONE || edge == LAB_EDGE_CENTER) {
+				wlr_log(WLR_ERROR,
+					"Invalid argument for action %s: '%s' (%s)",
+					action_names[action->type], argument, content);
+			} else {
+				action_arg_add_int(action, argument, edge);
+			}
 			goto cleanup;
 		}
 		break;
@@ -832,10 +846,54 @@ handle_view_destroy(struct wl_listener *listener, void *data)
 }
 
 static void
+print_prompt_command(struct buf *buf, const char *format,
+		struct action *action, struct theme *theme)
+{
+	assert(format);
+
+	for (const char *p = format; *p; p++) {
+		/*
+		 * If we're not on a conversion specifier (like %m) then just
+		 * keep adding it to the buffer
+		 */
+		if (*p != '%') {
+			buf_add_char(buf, *p);
+			continue;
+		}
+
+		/* Process the %* conversion specifier */
+		++p;
+
+		switch (*p) {
+		case 'm':
+			buf_add(buf, action_get_str(action,
+					"message.prompt", "Choose wisely"));
+			break;
+		case 'n':
+			buf_add(buf, _("No"));
+			break;
+		case 'y':
+			buf_add(buf, _("Yes"));
+			break;
+		case 'b':
+			buf_add_hex_color(buf, theme->osd_bg_color);
+			break;
+		case 't':
+			buf_add_hex_color(buf, theme->osd_label_text_color);
+			break;
+		default:
+			wlr_log(WLR_ERROR,
+				"invalid prompt command conversion specifier '%c'", *p);
+			break;
+		}
+	}
+}
+
+static void
 action_prompt_create(struct view *view, struct server *server, struct action *action)
 {
 	struct buf command = BUF_INIT;
-	action_prompt_command(&command, rc.prompt_command, action, rc.theme);
+	print_prompt_command(&command, rc.prompt_command, action, rc.theme);
 
 	wlr_log(WLR_INFO, "prompt command: '%s'", command.data);
 
@@ -890,7 +948,7 @@ action_check_prompt_result(pid_t pid, int exit_code)
 		if (exit_code == LAB_EXIT_SUCCESS) {
 			wlr_log(WLR_INFO, "Selected the 'then' branch");
 			actions = action_get_actionlist(prompt->action, "then");
-		} else if (exit_code == LAB_EXIT_TIMEOUT) {
+		} else if (exit_code == LAB_EXIT_CANCELLED) {
 			/* no-op */
 		} else {
 			wlr_log(WLR_INFO, "Selected the 'else' branch");
@@ -1068,17 +1126,17 @@ run_action(struct view *view, struct server *server, struct action *action,
 		}
 		break;
 	case ACTION_TYPE_NEXT_WINDOW:
-		if (server->input_mode == LAB_INPUT_STATE_WINDOW_SWITCHER) {
-			osd_cycle(server, LAB_CYCLE_DIR_FORWARD);
+		if (server->input_mode == LAB_INPUT_STATE_CYCLE) {
+			cycle_step(server, LAB_CYCLE_DIR_FORWARD);
 		} else {
-			osd_begin(server, LAB_CYCLE_DIR_FORWARD);
+			cycle_begin(server, LAB_CYCLE_DIR_FORWARD);
 		}
 		break;
 	case ACTION_TYPE_PREVIOUS_WINDOW:
-		if (server->input_mode == LAB_INPUT_STATE_WINDOW_SWITCHER) {
-			osd_cycle(server, LAB_CYCLE_DIR_BACKWARD);
+		if (server->input_mode == LAB_INPUT_STATE_CYCLE) {
+			cycle_step(server, LAB_CYCLE_DIR_BACKWARD);
 		} else {
-			osd_begin(server, LAB_CYCLE_DIR_BACKWARD);
+			cycle_begin(server, LAB_CYCLE_DIR_BACKWARD);
 		}
 		break;
 	case ACTION_TYPE_RECONFIGURE:
@@ -1179,8 +1237,17 @@ run_action(struct view *view, struct server *server, struct action *action,
 		break;
 	case ACTION_TYPE_RESIZE:
 		if (view) {
-			enum lab_edge resize_edges = cursor_get_resize_edges(
-				server->seat.cursor, ctx);
+			/*
+			 * If a direction was specified in the config, honour it.
+			 * Otherwise, fall back to determining the resize edges from
+			 * the current cursor position (existing behaviour).
+			 */
+			enum lab_edge resize_edges =
+				action_get_int(action, "direction", LAB_EDGE_NONE);
+			if (resize_edges == LAB_EDGE_NONE) {
+				resize_edges = cursor_get_resize_edges(
+					server->seat.cursor, ctx);
+			}
 			interactive_begin(view, LAB_INPUT_STATE_RESIZE,
 				resize_edges);
 		}
@@ -1525,7 +1592,7 @@ actions_run(struct view *activator, struct server *server,
 
 	struct action *action;
 	wl_list_for_each(action, actions, link) {
-		if (server->input_mode == LAB_INPUT_STATE_WINDOW_SWITCHER
+		if (server->input_mode == LAB_INPUT_STATE_CYCLE
 				&& action->type != ACTION_TYPE_NEXT_WINDOW
 				&& action->type != ACTION_TYPE_PREVIOUS_WINDOW) {
 			wlr_log(WLR_INFO, "Only NextWindow or PreviousWindow "

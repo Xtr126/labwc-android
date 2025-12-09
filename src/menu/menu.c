@@ -482,13 +482,13 @@ fill_item(struct menu *menu, xmlNode *node)
 		goto out;
 	}
 
-	struct menuitem *item = item_create(menu, (char *)label, icon_name, false);
+	struct menuitem *item = item_create(menu, label, icon_name, false);
 	lab_xml_expand_dotted_attributes(node);
 	append_parsed_actions(node, &item->actions);
 
 out:
-	free(label);
-	free(icon_name);
+	xmlFree(label);
+	xmlFree(icon_name);
 }
 
 static void
@@ -619,10 +619,10 @@ fill_menu(struct server *server, struct menu *parent, xmlNode *n)
 		item->submenu = menu;
 	}
 error:
-	free(label);
-	free(icon_name);
-	free(execute);
-	free(id);
+	xmlFree(label);
+	xmlFree(icon_name);
+	xmlFree(execute);
+	xmlFree(id);
 }
 
 /* This can be one of <separator> and <separator label=""> */
@@ -631,7 +631,7 @@ fill_separator(struct menu *menu, xmlNode *n)
 {
 	char *label = (char *)xmlGetProp(n, (const xmlChar *)"label");
 	separator_create(menu, label);
-	free(label);
+	xmlFree(label);
 }
 
 /* parent==NULL when processing toplevel menus in menu.xml */
@@ -679,30 +679,6 @@ parse_buf(struct server *server, struct menu *parent, struct buf *buf)
 	return true;
 }
 
-/*
- * @stream can come from either of the following:
- *   - fopen() in the case of reading a file such as menu.xml
- *   - popen() when processing pipemenus
- */
-static void
-parse_stream(struct server *server, FILE *stream)
-{
-	char *line = NULL;
-	size_t len = 0;
-	struct buf b = BUF_INIT;
-
-	while (getline(&line, &len, stream) != -1) {
-		char *p = strrchr(line, '\n');
-		if (p) {
-			*p = '\0';
-		}
-		buf_add(&b, line);
-	}
-	free(line);
-	parse_buf(server, NULL, &b);
-	buf_reset(&b);
-}
-
 static void
 parse_xml(const char *filename, struct server *server)
 {
@@ -715,13 +691,13 @@ parse_xml(const char *filename, struct server *server)
 
 	for (struct wl_list *elm = iter(&paths); elm != &paths; elm = iter(elm)) {
 		struct path *path = wl_container_of(elm, path, link);
-		FILE *stream = fopen(path->string, "r");
-		if (!stream) {
+		struct buf buf = buf_from_file(path->string);
+		if (!buf.len) {
 			continue;
 		}
 		wlr_log(WLR_INFO, "read menu file %s", path->string);
-		parse_stream(server, stream);
-		fclose(stream);
+		parse_buf(server, /*parent*/ NULL, &buf);
+		buf_reset(&buf);
 		if (!should_merge_config) {
 			break;
 		}
@@ -900,8 +876,8 @@ update_client_list_combined_menu(struct server *server)
 
 		wl_list_for_each(view, &server->views, link) {
 			if (view->workspace == workspace) {
-				const char *title = view_get_string_prop(view, "title");
-				if (!view->foreign_toplevel || string_null_or_empty(title)) {
+				if (!view->foreign_toplevel
+						|| string_null_or_empty(view->title)) {
 					continue;
 				}
 
@@ -909,9 +885,9 @@ update_client_list_combined_menu(struct server *server)
 					buf_add(&buffer, "*");
 				}
 				if (view->minimized) {
-					buf_add_fmt(&buffer, "(%s)", title);
+					buf_add_fmt(&buffer, "(%s)", view->title);
 				} else {
-					buf_add(&buffer, title);
+					buf_add(&buffer, view->title);
 				}
 				item = item_create(menu, buffer.data, NULL,
 					/*show arrow*/ false);

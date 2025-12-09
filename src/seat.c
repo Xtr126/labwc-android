@@ -135,6 +135,7 @@ configure_libinput(struct wlr_input_device *wlr_input_device)
 		return;
 	}
 	struct input *input = wlr_input_device->data;
+	assert(input);  /* Check the caller remembered to set this! */
 
 #if !WLR_HAS_LIBINPUT_BACKEND
         input->scroll_factor = 1.0;
@@ -417,6 +418,9 @@ new_keyboard(struct seat *seat, struct wlr_input_device *device, bool is_virtual
 	keyboard->base.wlr_input_device = device;
 	keyboard->wlr_keyboard = kb;
 	keyboard->is_virtual = is_virtual;
+	device->data = keyboard;
+
+	configure_libinput(device);
 
 	if (!seat->keyboard_group->keyboard.keymap) {
 		wlr_log(WLR_ERROR, "cannot set keymap");
@@ -569,9 +573,9 @@ handle_new_input(struct wl_listener *listener, void *data)
 }
 
 static void
-new_virtual_pointer(struct wl_listener *listener, void *data)
+handle_new_virtual_pointer(struct wl_listener *listener, void *data)
 {
-	struct seat *seat = wl_container_of(listener, seat, virtual_pointer_new);
+	struct seat *seat = wl_container_of(listener, seat, new_virtual_pointer);
 	struct wlr_virtual_pointer_v1_new_pointer_event *event = data;
 	struct wlr_virtual_pointer_v1 *pointer = event->new_pointer;
 	struct wlr_input_device *device = &pointer->pointer.base;
@@ -655,9 +659,7 @@ seat_init(struct server *server)
 
 	seat->virtual_pointer = wlr_virtual_pointer_manager_v1_create(
 		server->wl_display);
-	wl_signal_add(&seat->virtual_pointer->events.new_virtual_pointer,
-		&seat->virtual_pointer_new);
-	seat->virtual_pointer_new.notify = new_virtual_pointer;
+	CONNECT_SIGNAL(seat->virtual_pointer, seat, new_virtual_pointer);
 
 	seat->virtual_keyboard = wlr_virtual_keyboard_manager_v1_create(
 		server->wl_display);
@@ -687,7 +689,7 @@ seat_finish(struct server *server)
 	struct seat *seat = &server->seat;
 	wl_list_remove(&seat->new_input.link);
 	wl_list_remove(&seat->focus_change.link);
-	wl_list_remove(&seat->virtual_pointer_new.link);
+	wl_list_remove(&seat->new_virtual_pointer.link);
 	wl_list_remove(&seat->new_virtual_keyboard.link);
 
 	struct input *input, *next;
@@ -749,6 +751,7 @@ seat_reconfigure(struct server *server)
 	wl_list_for_each(input, &seat->inputs, link) {
 		switch (input->wlr_input_device->type) {
 		case WLR_INPUT_DEVICE_KEYBOARD:
+			configure_libinput(input->wlr_input_device);
 			configure_keyboard(seat, input);
 			break;
 		case WLR_INPUT_DEVICE_POINTER:
@@ -855,46 +858,6 @@ seat_set_focus_layer(struct seat *seat, struct wlr_layer_surface_v1 *layer)
 	seat_focus(seat, layer->surface, /*replace_exclusive_layer*/ true,
 		/*is_lock_surface*/ false);
 	seat->focused_layer = layer;
-}
-
-static void
-pressed_surface_destroy(struct wl_listener *listener, void *data)
-{
-	struct seat *seat = wl_container_of(listener, seat,
-		pressed_surface_destroy);
-
-	/*
-	 * Using data directly prevents 'unused variable'
-	 * warning when compiling without asserts
-	 */
-	assert(data == seat->pressed.surface);
-
-	seat_reset_pressed(seat);
-}
-
-void
-seat_set_pressed(struct seat *seat, struct cursor_context *ctx)
-{
-	assert(ctx);
-	assert(ctx->view || ctx->surface);
-	seat_reset_pressed(seat);
-
-	seat->pressed = *ctx;
-
-	if (ctx->surface) {
-		seat->pressed_surface_destroy.notify = pressed_surface_destroy;
-		wl_signal_add(&ctx->surface->events.destroy,
-			&seat->pressed_surface_destroy);
-	}
-}
-
-void
-seat_reset_pressed(struct seat *seat)
-{
-	if (seat->pressed.surface) {
-		wl_list_remove(&seat->pressed_surface_destroy.link);
-	}
-	seat->pressed = (struct cursor_context){0};
 }
 
 void

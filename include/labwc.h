@@ -19,7 +19,7 @@ enum input_mode {
 	LAB_INPUT_STATE_MOVE,
 	LAB_INPUT_STATE_RESIZE,
 	LAB_INPUT_STATE_MENU,
-	LAB_INPUT_STATE_WINDOW_SWITCHER,
+	LAB_INPUT_STATE_CYCLE, /* a.k.a. window switching */
 };
 
 struct seat {
@@ -66,8 +66,7 @@ struct seat {
 	struct input_method_relay *input_method_relay;
 
 	/**
-	 * This is usually zeroed and is only set on button press while the
-	 * mouse is over a view or surface, and zeroed on button release.
+	 * Cursor context saved when a mouse button is pressed on a view/surface.
 	 * It is used to send cursor motion events to a surface even though
 	 * the cursor has left the surface in the meantime.
 	 *
@@ -77,10 +76,11 @@ struct seat {
 	 * It is also used to:
 	 * - determine the target view for action in "Drag" mousebind
 	 * - validate view move/resize requests from CSD clients
-	 *
-	 * Both (view && !surface) and (surface && !view) are possible.
 	 */
-	struct cursor_context pressed;
+	struct cursor_context_saved pressed;
+
+	/* Cursor context of the last cursor motion */
+	struct cursor_context_saved last_cursor_ctx;
 
 	struct lab_set bound_buttons;
 
@@ -140,10 +140,9 @@ struct seat {
 	struct wl_list tablet_pads;
 
 	struct wl_listener constraint_commit;
-	struct wl_listener pressed_surface_destroy;
 
 	struct wlr_virtual_pointer_manager_v1 *virtual_pointer;
-	struct wl_listener virtual_pointer_new;
+	struct wl_listener new_virtual_pointer;
 
 	struct wlr_virtual_keyboard_manager_v1 *virtual_keyboard;
 	struct wl_listener new_virtual_keyboard;
@@ -190,6 +189,7 @@ struct server {
 	struct wl_listener xdg_toplevel_icon_set_icon;
 
 	struct wl_list views;
+	uint64_t next_view_creation_id;
 	struct wl_list unmanaged_surfaces;
 
 	struct seat seat;
@@ -258,6 +258,7 @@ struct server {
 	struct wl_list outputs;
 	struct wl_listener new_output;
 	struct wlr_output_layout *output_layout;
+	uint64_t next_output_id_bit;
 
 	struct wl_listener output_layout_change;
 	struct wlr_output_manager_v1 *output_manager;
@@ -304,14 +305,15 @@ struct server {
 	struct wlr_security_context_manager_v1 *security_context_manager_v1;
 
 	/* Set when in cycle (alt-tab) mode */
-	struct osd_state {
-		struct view *cycle_view;
+	struct cycle_state {
+		struct view *selected_view;
+		struct wl_list views;
+		bool preview_was_shaded;
 		bool preview_was_enabled;
 		struct wlr_scene_node *preview_node;
-		struct wlr_scene_tree *preview_parent;
-		struct wlr_scene_node *preview_anchor;
+		struct wlr_scene_node *preview_dummy;
 		struct lab_scene_rect *preview_outline;
-	} osd_state;
+	} cycle;
 
 	struct theme *theme;
 
@@ -401,8 +403,6 @@ void seat_pointer_end_grab(struct seat *seat, struct wlr_surface *surface);
 void seat_focus_lock_surface(struct seat *seat, struct wlr_surface *surface);
 
 void seat_set_focus_layer(struct seat *seat, struct wlr_layer_surface_v1 *layer);
-void seat_set_pressed(struct seat *seat, struct cursor_context *ctx);
-void seat_reset_pressed(struct seat *seat);
 void seat_output_layout_changed(struct seat *seat);
 
 /*

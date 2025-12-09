@@ -107,20 +107,12 @@ struct view_size_hints {
 struct view_impl {
 	void (*configure)(struct view *view, struct wlr_box geo);
 	void (*close)(struct view *view);
-	const char *(*get_string_prop)(struct view *view, const char *prop);
-	void (*map)(struct view *view);
 	void (*set_activated)(struct view *view, bool activated);
 	void (*set_fullscreen)(struct view *view, bool fullscreen);
 	void (*notify_tiled)(struct view *view);
-	/*
-	 * client_request is true if the client unmapped its own
-	 * surface; false if we are just minimizing the view. The two
-	 * cases are similar but have subtle differences (e.g., when
-	 * minimizing we don't destroy the foreign toplevel handle).
-	 */
-	void (*unmap)(struct view *view, bool client_request);
 	void (*maximize)(struct view *view, enum view_axis maximized);
 	void (*minimize)(struct view *view, bool minimize);
+	struct view *(*get_parent)(struct view *self);
 	struct view *(*get_root)(struct view *self);
 	void (*append_children)(struct view *self, struct wl_array *children);
 	bool (*is_modal_dialog)(struct view *self);
@@ -142,6 +134,9 @@ struct view {
 	enum view_type type;
 	const struct view_impl *impl;
 	struct wl_list link;
+
+	/* This is cleared when the view is not in the cycle list */
+	struct wl_list cycle_link;
 
 	/*
 	 * The primary output that the view is displayed on. Specifically:
@@ -165,17 +160,22 @@ struct view {
 	 * This is used to notify the foreign toplevel
 	 * implementation and to update the SSD invisible
 	 * resize area.
-	 * It is a bitset of output->scene_output->index.
+	 * It is a bitset of output->id_bit.
 	 */
 	uint64_t outputs;
 
 	struct workspace *workspace;
 	struct wlr_surface *surface;
 	struct wlr_scene_tree *scene_tree;
-	struct wlr_scene_tree *content_tree;
+	struct wlr_scene_tree *content_tree; /* may be NULL for unmapped view */
+
+	/* These are never NULL and an empty string is set instead. */
+	char *title;
+	char *app_id; /* WM_CLASS for xwayland windows */
 
 	bool mapped;
 	bool been_mapped;
+	uint64_t creation_id;
 	enum lab_ssd_mode ssd_mode;
 	enum ssd_preference ssd_preference;
 	bool shaded;
@@ -242,7 +242,6 @@ struct view {
 	struct mappable mappable;
 
 	struct wl_listener destroy;
-	struct wl_listener surface_destroy;
 	struct wl_listener commit;
 	struct wl_listener request_move;
 	struct wl_listener request_resize;
@@ -302,6 +301,9 @@ struct view_query {
 struct xdg_toplevel_view {
 	struct view base;
 	struct wlr_xdg_surface *xdg_surface;
+
+	/* Optional black background fill behind fullscreen view */
+	struct wlr_scene_rect *fullscreen_bg;
 
 	/* Events unique to xdg-toplevel views */
 	struct wl_listener set_app_id;
@@ -392,15 +394,6 @@ struct view *view_next(struct wl_list *head, struct view *view,
  * Returns NULL if there are no views matching the criteria.
  */
 struct view *view_prev(struct wl_list *head, struct view *view,
-	enum lab_view_criteria criteria);
-
-/*
- * Same as `view_next()` except that they iterate one whole cycle rather than
- * stopping at the list-head
- */
-struct view *view_next_no_head_stop(struct wl_list *head, struct view *from,
-	enum lab_view_criteria criteria);
-struct view *view_prev_no_head_stop(struct wl_list *head, struct view *from,
 	enum lab_view_criteria criteria);
 
 /**
@@ -576,9 +569,8 @@ bool view_on_output(struct view *view, struct output *output);
  */
 bool view_has_strut_partial(struct view *view);
 
-const char *view_get_string_prop(struct view *view, const char *prop);
-void view_update_title(struct view *view);
-void view_update_app_id(struct view *view);
+void view_set_title(struct view *view, const char *title);
+void view_set_app_id(struct view *view, const char *app_id);
 void view_reload_ssd(struct view *view);
 
 void view_set_shade(struct view *view, bool shaded);
@@ -592,7 +584,7 @@ void view_adjust_size(struct view *view, int *w, int *h);
 
 void view_evacuate_region(struct view *view);
 void view_on_output_destroy(struct view *view);
-void view_connect_map(struct view *view, struct wlr_surface *surface);
+void view_update_visibility(struct view *view);
 
 void view_init(struct view *view);
 void view_destroy(struct view *view);

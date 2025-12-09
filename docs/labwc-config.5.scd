@@ -285,6 +285,8 @@ this is for compatibility with Openbox.
 		--button-text-color '%t' \\
 		--border-bottom-size 1 \\
 		--button-border-size 3 \\
+		--keyboard-focus on-demand \\
+		--layer overlay \\
 		--timeout 0
 	```
 
@@ -337,7 +339,8 @@ this is for compatibility with Openbox.
 ## WINDOW SWITCHER
 
 ```
-<windowSwitcher show="yes" style="classic" preview="yes" outlines="yes" allWorkspaces="no">
+<windowSwitcher preview="yes" outlines="yes" allWorkspaces="no">
+  <osd show="yes" style="classic" output="all" thumbnailLabelFormat="%T" />
   <fields>
     <field content="icon" width="5%" />
     <field content="desktop_entry_name" width="30%" />
@@ -346,14 +349,7 @@ this is for compatibility with Openbox.
 </windowSwitcher>
 ```
 
-*<windowSwitcher show="" style="" preview="" outlines="" allWorkspaces="">*
-	*show* [yes|no] Draw the OnScreenDisplay when switching between
-	windows. Default is yes.
-
-	*style* [classic|thumbnail] Configures the style of the OnScreenDisplay.
-	"classic" displays window information like icons and titles in a vertical list.
-	"thumbnail" shows window thumbnail, icon and title in grids.
-
+*<windowSwitcher preview="" outlines="" allWorkspaces="" unshade="" order="">*
 	*preview* [yes|no] Preview the contents of the selected window when
 	switching between windows. Default is yes.
 
@@ -364,8 +360,34 @@ this is for compatibility with Openbox.
 	they are on. Default no (that is only windows on the current workspace
 	are shown).
 
+	*unshade* [yes|no] Temporarily unshade windows when switching between
+	them and permanently unshade on the final selection. Default is yes.
+
+	*order* [focus|age] The order in which windows are cycled. *focus* cycles by
+	recent focus history, starting with the previously focused window. *age* cycles
+	by creation/open order, a stable taskbar-style ordering that doesn’t change on
+	focus. Default is *focus*.
+
+*<windowSwitcher><osd show="" style="" output="" thumbnailLabelFormat="" />*
+	*show* [yes|no] Draw the OnScreenDisplay when switching between
+	windows. Default is yes.
+
+	*style* [classic|thumbnail] Configures the style of the OSD.
+	"classic" displays window information like icons and titles in a vertical list.
+	"thumbnail" shows window thumbnail, icon and title in grids.
+
+	*output* [all|focused|cursor] Configures which monitor(s) show the OSD.
+	"all" displays the OSD on all monitors.
+	"focused" displays the OSD on the monitor with keyboard focus.
+	"cursor" displays the OSD on the monitor containing the mouse pointer.
+	Default is "all".
+
+	*thumbnailLabelFormat* Format to be used for the thumbnail label according to *custom*
+	field below, only applied when using *<osd style="thumbnail" />*.
+	Default is "%T".
+
 *<windowSwitcher><fields><field content="" width="%">*
-	Define window switcher fields when using *<windowSwitcher style="classic" />*.
+	Define window switcher fields when using *<osd style="classic" />*.
 
 	*content* defines what the field shows and can be any of:
 
@@ -397,9 +419,9 @@ this is for compatibility with Openbox.
 	  fields are:
 		- 'B' - shell type, values [xwayland|xdg-shell]
 		- 'b' - shell type (short form), values [X|W]
-		- 'S' - state of window, values [M|m|F] (3 spaces allocated)
-		        (maximized, minimized, fullscreen)
-		- 's' - state of window (short form), values [M|m|F] (1 space)
+		- 'S' - state of window, values [m|s|M|F] (4 spaces allocated)
+		        (minimized, shaded, maximized, fullscreen)
+		- 's' - state of window (short form), values [m|s|M|F] (1 space)
 		- 'I' - wm-class/app-id
 		- 'i' - wm-class/app-id trimmed, remove "org." if available
 		- 'n' - desktop entry/file application name, falls back to
@@ -481,13 +503,16 @@ activated with SnapToEdge actions or, optionally, by dragging windows to the
 edges of an output. Edge snapping causes a window to occupy half of its output,
 extending outward from the snapped edge.
 
-*<snapping><range>*++
+*<snapping><range><inner>*++
+*<snapping><range><outer>*++
 *<snapping><cornerRange>*
-	If an interactive move ends with the cursor within *<range>* pixels of an
-	output edge, the window is snapped to the edge. If it's also within
-	*<cornerRange>* pixels of an output corner, the window is snapped to the
-	corner instead. A *<range>* of 0 disables snapping.
-	Default is 10 for *<range>* and 50 for *<cornerRange>*.
+	If an interactive move ends with the cursor within *inner* or *outer* pixels
+	of an output edge, the window is snapped to the edge. *inner* edges are edges
+	with an adjacent output and *outer* edges are edges without an adjacent output.
+	If it's also within *<cornerRange>* pixels of an output corner, the window is
+	snapped to the corner instead.
+	If *inner* and *outer* is 0, snapping is disabled.
+	Default is 10 for *<range><inner>* and *<range><outer>*, and 50 for *<cornerRange>*.
 
 *<snapping><overlay><enabled>* [yes|no]
 	Show an overlay when snapping to a window to an edge. Default is yes.
@@ -683,6 +708,45 @@ extending outward from the snapped edge.
 	invisible zones just beyond the window that serve as click targets for
 	mouse actions. Default is 8.
 
+# INPUT CONFIGURATION
+
+This section describes configuration of input devices including:
+
+- Keyboards
+- Mice
+- Touchpads (sometimes referred to as laptop trackpads)
+- Touchscreens
+- Tablets
+- Tablet tools (like stylus pens)
+
+It aims to clarify related terminology and separation of concerns.
+
+Keyboards are configured in the *<keyboard>* section below and are simple in
+this regard.
+
+Touchpads and mice are harder. They are both considered to be *pointer* devices
+by the compositor, and can be configured in the *<mouse>* and *<libinput>*
+sections. Any setting that is supported by libinput is configured in the
+*<libinput>* section, and anything else is in *<mouse>*. Touchpad devices can
+generate gesture events, like swipe and pinch. There are some related settings
+(e.g. *threeFingerDrag* and *twoFingerScroll*) in the *<libinput>* section.
+
+In the Wayland Compositor domain, events associated with touchscreens are
+sometimes simply referred to as *touch* events.  Touchscreens can be configured
+in both the *<touch>* and *<libinput>* sections. Note that touchscreen gestures
+are not interpreted by libinput, nor labwc. Any touch point is passed to the
+client (application) for any interpretation of gestures.
+
+Tablets are considered special by libinput although in the eyes of the Wayland
+protocol they are merely a *touch* capability. Tablets and associated tablet
+tools are configured in the *<tablet>*, *<tablettool>* and *<libinput>*
+sections. Note that the term *tablet* in libinput (and labwc) refers to graphics
+tablets only (e.g. Wacom Intuos), not to tablet devices like the Apple iPad.
+
+References:
+- https://wayland.freedesktop.org/libinput/doc/latest/tablet-support.html
+- https://wayland.freedesktop.org/libinput/doc/latest/gestures.html
+
 ## KEYBOARD
 
 *<keyboard><numlock>* [on|off]
@@ -791,6 +855,9 @@ extending outward from the snapped edge.
 
 ## MOUSE
 
+This section relates to mice and touchpads - which are both considered pointer
+input-devices by the Wayland protocol.
+
 *<mouse><doubleClickTime>*
 	Set double click time in milliseconds. Default is 500.
 
@@ -856,7 +923,7 @@ extending outward from the snapped edge.
 	Supported mouse *actions* include:
 	- Press: Pressing the specified button down in the context.
 	- Release: Releasing the specified button in the context.
-	- Click: Pressing and then releasing inside of the the context.
+	- Click: Pressing and then releasing inside of the context.
 	- DoubleClick: Two presses within the doubleClickTime.
 	- Drag: Pressing the button within the context, then moving the cursor.
 	- Scroll: Scrolling in specified *direction* in the context.
@@ -900,6 +967,11 @@ extending outward from the snapped edge.
 	loaded even if the <default /> element is not provided.
 
 ## TOUCH
+
+This section relates to touchscreens and *not* touchpads.
+
+Note: To rotate touch events with output rotation, use the libinput
+*calibrationMatrix* setting.
 
 ```
 <touch deviceName="" mapToOutput="" mouseEmulation="no"/>
@@ -1063,14 +1135,9 @@ extending outward from the snapped edge.
 	attribute is provided, a 'default' device profile will created that will
 	act as the fallback for all libinput devices. Category can be set to any
 	of the following types:
-	- *touch* - Devices which have a defined width/height, but do not
-	  support multitouch (i.e. they cannot track multiple locations where
-	  the screen has been touched). Drawing tablets typically fall into this
-	  type.
-	- *touchpad* - Same as 'touch' but support multitouch. This typically
-	  includes laptop track pads with two-finger scroll and swipe gestures.
-	- *non-touch* - Anything not described above, for example traditional
-	  mouse pointers.
+	- *touch* - Includes touchscreens and drawing-tablets.
+	- *touchpad* - Includes touchpads (also known as laptop trackpads)
+	- *non-touch* - Includes traditional mice
 	- *default* - Defines a device-category applicable to all devices not
 	  matched by anything else. This can be useful for a fallback, or if you
 	  want the same settings to be applied to all devices.
@@ -1136,7 +1203,7 @@ extending outward from the snapped edge.
 	the middle mouse button (scroll wheel).
 
 *<libinput><device><disableWhileTyping>* [yes|no]
-	Enable or disable disable while typing for this category. DWT ignores
+	Enable or disable while typing for this category. DWT ignores
 	any motion events while a keyboard is typing, and for a short while
 	after as well.
 

@@ -1,6 +1,5 @@
 labwc_sources = files(
   'action.c',
-  'action-prompt-command.c',
   'buffer.c',
   'debug.c',
   'desktop.c',
@@ -51,12 +50,12 @@ endif
 subdir('android')
 subdir('common')
 subdir('config')
+subdir('cycle')
 subdir('decorations')
 subdir('foreign-toplevel')
 subdir('img')
 subdir('input')
 subdir('menu')
-subdir('osd')
 subdir('protocols')
 subdir('scaled-buffer')
 subdir('ssd')

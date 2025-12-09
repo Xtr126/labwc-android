@@ -10,12 +10,12 @@
 #include "common/macros.h"
 #include "config/keybind.h"
 #include "config/rcxml.h"
+#include "cycle.h"
 #include "idle.h"
 #include "input/ime.h"
 #include "input/key-state.h"
 #include "labwc.h"
 #include "menu/menu.h"
-#include "osd.h"
 #include "session-lock.h"
 #include "view.h"
 #include "workspaces.h"
@@ -88,22 +88,6 @@ keyboard_get_all_modifiers(struct seat *seat)
 	return modifiers;
 }
 
-static void
-end_cycling(struct server *server)
-{
-	should_cancel_cycling_on_next_key_release = false;
-
-	if (server->input_mode != LAB_INPUT_STATE_WINDOW_SWITCHER) {
-		return;
-	}
-
-	struct view *cycle_view = server->osd_state.cycle_view;
-	/* FIXME: osd_finish() transiently sets focus to the old surface */
-	osd_finish(server);
-	/* Note that server->osd_state.cycle_view is cleared at this point */
-	desktop_focus_view(cycle_view, /*raise*/ true);
-}
-
 static struct wlr_seat_client *
 seat_client_from_keyboard_resource(struct wl_resource *resource)
 {
@@ -162,21 +146,20 @@ handle_modifiers(struct wl_listener *listener, void *data)
 		overlay_update(seat);
 	}
 
-	bool window_switcher_active = server->input_mode
-					== LAB_INPUT_STATE_WINDOW_SWITCHER;
+	bool cycling = server->input_mode == LAB_INPUT_STATE_CYCLE;
 
-	if (window_switcher_active || seat->workspace_osd_shown_by_modifier) {
-		if (!keyboard_get_all_modifiers(seat)) {
-			if (window_switcher_active) {
-				if (key_state_nr_bound_keys()) {
-					should_cancel_cycling_on_next_key_release = true;
-				} else {
-					end_cycling(server);
-				}
+	if ((cycling || seat->workspace_osd_shown_by_modifier)
+			&& !keyboard_get_all_modifiers(seat)) {
+		if (cycling) {
+			if (key_state_nr_bound_keys()) {
+				should_cancel_cycling_on_next_key_release = true;
+			} else {
+				should_cancel_cycling_on_next_key_release = false;
+				cycle_finish(server, /*switch_focus*/ true);
 			}
-			if (seat->workspace_osd_shown_by_modifier) {
-				workspaces_osd_hide(seat);
-			}
+		}
+		if (seat->workspace_osd_shown_by_modifier) {
+			workspaces_osd_hide(seat);
 		}
 	}
 
@@ -408,7 +391,8 @@ handle_key_release(struct server *server, uint32_t evdev_keycode)
 	 * event it gets stuck on repeat.
 	 */
 	if (should_cancel_cycling_on_next_key_release) {
-		end_cycling(server);
+		should_cancel_cycling_on_next_key_release = false;
+		cycle_finish(server, /*switch_focus*/ true);
 	}
 
 	/*
@@ -481,19 +465,19 @@ handle_cycle_view_key(struct server *server, struct keyinfo *keyinfo)
 	for (int i = 0; i < keyinfo->translated.nr_syms; i++) {
 		if (keyinfo->translated.syms[i] == XKB_KEY_Escape) {
 			/* Esc deactivates window switcher */
-			osd_finish(server);
+			cycle_finish(server, /*switch_focus*/ false);
 			return true;
 		}
 		if (keyinfo->translated.syms[i] == XKB_KEY_Up
 				|| keyinfo->translated.syms[i] == XKB_KEY_Left) {
 			/* Up/Left cycles the window backward */
-			osd_cycle(server, LAB_CYCLE_DIR_BACKWARD);
+			cycle_step(server, LAB_CYCLE_DIR_BACKWARD);
 			return true;
 		}
 		if (keyinfo->translated.syms[i] == XKB_KEY_Down
 				|| keyinfo->translated.syms[i] == XKB_KEY_Right) {
 			/* Down/Right cycles the window forward */
-			osd_cycle(server, LAB_CYCLE_DIR_FORWARD);
+			cycle_step(server, LAB_CYCLE_DIR_FORWARD);
 			return true;
 		}
 	}
@@ -543,7 +527,7 @@ handle_compositor_keybindings(struct keyboard *keyboard,
 			key_state_store_pressed_key_as_bound(event->keycode);
 			handle_menu_keys(server, &keyinfo.translated);
 			return LAB_KEY_HANDLED_TRUE;
-		} else if (server->input_mode == LAB_INPUT_STATE_WINDOW_SWITCHER) {
+		} else if (server->input_mode == LAB_INPUT_STATE_CYCLE) {
 			if (handle_cycle_view_key(server, &keyinfo)) {
 				key_state_store_pressed_key_as_bound(event->keycode);
 				return LAB_KEY_HANDLED_TRUE;

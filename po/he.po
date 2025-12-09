@@ -1,80 +1,81 @@
 # Labwc pot file
 # Copyright (C) 2024
 # This file is distributed under the same license as the labwc package.
-# zenobit <zenobit@disroot.org>, 2024.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: labwc\n"
 "Report-Msgid-Bugs-To: https://github.com/labwc/labwc/issues\n"
 "POT-Creation-Date: 2024-09-19 21:09+1000\n"
-"PO-Revision-Date: 2025-10-11 20:01+0000\n"
-"Last-Translator: p-bo <pavel.borecki@gmail.com>\n"
-"Language-Team: Czech <https://translate.lxqt-project.org/projects/labwc/"
-"labwc/cs/>\n"
-"Language: cs\n"
+"PO-Revision-Date: 2025-10-30 06:38+0000\n"
+"Last-Translator: Yaron Shahrabani <sh.yaron@gmail.com>\n"
+"Language-Team: Hebrew <https://translate.lxqt-project.org/projects/labwc/"
+"labwc/he/>\n"
+"Language: he\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"Plural-Forms: nplurals=4; plural=(n == 1) ? 0 : ((n == 2) ? 1 : ((n > 10 && "
+"n % 10 == 0) ? 2 : 3));\n"
 "X-Generator: Weblate 4.2.1\n"
 
 #: src/menu/menu.c:1016
 msgid "Go there..."
-msgstr "Přejít tam..."
+msgstr "מעבר לשם…"
 
 #: src/menu/menu.c:1034
 msgid "Terminal"
-msgstr "Terminál"
+msgstr "מסוף"
 
 #: src/menu/menu.c:1040
 msgid "Reconfigure"
-msgstr "Přenastavit"
+msgstr "הגדרה מחדש"
 
 #: src/menu/menu.c:1042
 msgid "Exit"
-msgstr "Ukončit"
+msgstr "יציאה"
 
 #: src/menu/menu.c:1056
 msgid "Minimize"
-msgstr "Minimalizovat"
+msgstr "מזעור"
 
 #: src/menu/menu.c:1058
 msgid "Maximize"
-msgstr "Maximalizovat"
+msgstr "הגדלה"
 
 #: src/menu/menu.c:1060
 msgid "Fullscreen"
-msgstr "Na celou obrazovku"
+msgstr "מסך מלא"
 
 #: src/menu/menu.c:1062
 msgid "Roll Up/Down"
-msgstr "Posouvat nahoru/dolů"
+msgstr "גלגול למעלה/למטה"
 
 #: src/menu/menu.c:1064
 msgid "Decorations"
-msgstr "Dekorace"
+msgstr "עיטורים"
 
 #: src/menu/menu.c:1066
 msgid "Always on Top"
-msgstr "Vždy nahoře"
+msgstr "תמיד עליון"
 
 #: src/menu/menu.c:1071
 msgid "Move Left"
-msgstr "Posunout doleva"
+msgstr "הזזה שמאלה"
 
 #: src/menu/menu.c:1078
 msgid "Move Right"
-msgstr "Posunout doprava"
+msgstr "הזזה ימינה"
 
 #: src/menu/menu.c:1083
 msgid "Always on Visible Workspace"
-msgstr "Vždy na viditelné Pracovní ploše"
+msgstr "תמיד בסביבת העבודה הגלויה"
 
 #: src/menu/menu.c:1086
 msgid "Workspace"
-msgstr "Pracovní plocha"
+msgstr "סביבת עבודה"
 
 #: src/menu/menu.c:1089
 msgid "Close"
-msgstr "Zavřít"
+msgstr "סגירה"

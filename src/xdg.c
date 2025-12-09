@@ -5,10 +5,12 @@
 #include <wlr/types/wlr_fractional_scale_v1.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_xdg_activation_v1.h>
+#include <wlr/types/wlr_xdg_dialog_v1.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/types/wlr_xdg_toplevel_icon_v1.h>
 #include "buffer.h"
 #include "common/array.h"
+#include "common/box.h"
 #include "common/macros.h"
 #include "common/mem.h"
 #include "config/rcxml.h"
@@ -128,6 +130,58 @@ do_late_positioning(struct view *view)
 	}
 }
 
+static void
+disable_fullscreen_bg(struct view *view)
+{
+	struct xdg_toplevel_view *xdg_view = xdg_toplevel_view_from_view(view);
+	if (xdg_view->fullscreen_bg) {
+		wlr_scene_node_set_enabled(&xdg_view->fullscreen_bg->node, false);
+	}
+}
+
+/*
+ * Centers any fullscreen view smaller than the full output size.
+ * This should be called immediately before view_moved().
+ */
+static void
+center_fullscreen_if_needed(struct view *view)
+{
+	if (!view->fullscreen || !output_is_usable(view->output)) {
+		disable_fullscreen_bg(view);
+		return;
+	}
+
+	struct wlr_box output_box = {0};
+	wlr_output_layout_get_box(view->server->output_layout,
+		view->output->wlr_output, &output_box);
+	box_center(view->current.width, view->current.height, &output_box,
+		&output_box, &view->current.x, &view->current.y);
+
+	/* Reset pending x/y to computed position also */
+	view->pending.x = view->current.x;
+	view->pending.y = view->current.y;
+
+	if (view->current.width >= output_box.width
+			&& view->current.width >= output_box.height) {
+		disable_fullscreen_bg(view);
+		return;
+	}
+
+	struct xdg_toplevel_view *xdg_view = xdg_toplevel_view_from_view(view);
+	if (!xdg_view->fullscreen_bg) {
+		const float black[4] = {0, 0, 0, 1};
+		xdg_view->fullscreen_bg =
+			wlr_scene_rect_create(view->scene_tree, 0, 0, black);
+		wlr_scene_node_lower_to_bottom(&xdg_view->fullscreen_bg->node);
+	}
+
+	wlr_scene_node_set_position(&xdg_view->fullscreen_bg->node,
+		output_box.x - view->current.x, output_box.y - view->current.y);
+	wlr_scene_rect_set_size(xdg_view->fullscreen_bg,
+		output_box.width, output_box.height);
+	wlr_scene_node_set_enabled(&xdg_view->fullscreen_bg->node, true);
+}
+
 /* TODO: reorder so this forward declaration isn't needed */
 static void set_pending_configure_serial(struct view *view, uint32_t serial);
 
@@ -216,7 +270,7 @@ handle_commit(struct wl_listener *listener, void *data)
 				&& extent.height == view->pending.height) {
 			wlr_log(WLR_DEBUG, "window geometry for client (%s) "
 				"appears to be incorrect - ignoring",
-				view_get_string_prop(view, "app_id"));
+				view->app_id);
 			size = extent; /* Use surface extent instead */
 		}
 	}
@@ -237,6 +291,8 @@ handle_commit(struct wl_listener *listener, void *data)
 
 	if (update_required) {
 		view_impl_apply_geometry(view, size.width, size.height);
+		center_fullscreen_if_needed(view);
+		view_moved(view);
 
 		/*
 		 * Some views (e.g., terminals that scale as multiples of rows
@@ -283,9 +339,8 @@ handle_configure_timeout(void *data)
 	assert(view->pending_configure_serial > 0);
 	assert(view->pending_configure_timeout);
 
-	const char *app_id = view_get_string_prop(view, "app_id");
 	wlr_log(WLR_INFO, "client (%s) did not respond to configure request "
-		"in %d ms", app_id, CONFIGURE_TIMEOUT_MS);
+		"in %d ms", view->app_id, CONFIGURE_TIMEOUT_MS);
 
 	wl_event_source_remove(view->pending_configure_timeout);
 	view->pending_configure_serial = 0;
@@ -335,8 +390,10 @@ handle_configure_timeout(void *data)
 		}
 		view->current.x = view->pending.x;
 		view->current.y = view->pending.y;
-		view_moved(view);
 	}
+
+	center_fullscreen_if_needed(view);
+	view_moved(view);
 
 	/* Re-sync pending view with current state */
 	snap_constraints_update(view);
@@ -400,7 +457,7 @@ handle_request_move(struct wl_listener *listener, void *data)
 	 * want.
 	 */
 	struct view *view = wl_container_of(listener, view, request_move);
-	if (view == view->server->seat.pressed.view) {
+	if (view == view->server->seat.pressed.ctx.view) {
 		interactive_begin(view, LAB_INPUT_STATE_MOVE, LAB_EDGE_NONE);
 	}
 }
@@ -418,7 +475,7 @@ handle_request_resize(struct wl_listener *listener, void *data)
 	 */
 	struct wlr_xdg_toplevel_resize_event *event = data;
 	struct view *view = wl_container_of(listener, view, request_resize);
-	if (view == view->server->seat.pressed.view) {
+	if (view == view->server->seat.pressed.ctx.view) {
 		interactive_begin(view, LAB_INPUT_STATE_RESIZE, event->edges);
 	}
 }
@@ -492,7 +549,9 @@ static void
 handle_set_title(struct wl_listener *listener, void *data)
 {
 	struct view *view = wl_container_of(listener, view, set_title);
-	view_update_title(view);
+	struct wlr_xdg_toplevel *toplevel = xdg_toplevel_from_view(view);
+
+	view_set_title(view, toplevel->title);
 }
 
 static void
@@ -501,7 +560,9 @@ handle_set_app_id(struct wl_listener *listener, void *data)
 	struct xdg_toplevel_view *xdg_toplevel_view =
 		wl_container_of(listener, xdg_toplevel_view, set_app_id);
 	struct view *view = &xdg_toplevel_view->base;
-	view_update_app_id(view);
+	struct wlr_xdg_toplevel *toplevel = xdg_toplevel_from_view(view);
+
+	view_set_app_id(view, toplevel->app_id);
 }
 
 static void
@@ -541,6 +602,12 @@ xdg_toplevel_view_configure(struct view *view, struct wlr_box geo)
 	} else if (view->pending_configure_serial == 0) {
 		view->current.x = geo.x;
 		view->current.y = geo.y;
+		/*
+		 * It's a bit difficult to think of a corner case where
+		 * center_fullscreen_if_needed() would actually be needed
+		 * here, but including it anyway for completeness.
+		 */
+		center_fullscreen_if_needed(view);
 		view_moved(view);
 	}
 }
@@ -571,6 +638,14 @@ xdg_toplevel_view_minimize(struct view *view, bool minimized)
 	/* noop */
 }
 
+static struct view *
+xdg_toplevel_view_get_parent(struct view *view)
+{
+	struct wlr_xdg_toplevel *toplevel = xdg_toplevel_from_view(view);
+	return toplevel->parent ?
+		(struct view *)toplevel->parent->base->data : NULL;
+}
+
 static struct wlr_xdg_toplevel *
 top_parent_of(struct view *view)
 {
@@ -586,8 +661,7 @@ static struct view *
 xdg_toplevel_view_get_root(struct view *view)
 {
 	struct wlr_xdg_toplevel *root = top_parent_of(view);
-	struct wlr_xdg_surface *surface = (struct wlr_xdg_surface *)root->base;
-	return (struct view *)surface->data;
+	return (struct view *)root->base->data;
 }
 
 static void
@@ -603,7 +677,7 @@ xdg_toplevel_view_append_children(struct view *self, struct wl_array *children)
 		if (view->type != LAB_XDG_SHELL_VIEW) {
 			continue;
 		}
-		if (!view->mapped && !view->minimized) {
+		if (!view->mapped) {
 			continue;
 		}
 		if (top_parent_of(view) != toplevel) {
@@ -612,6 +686,18 @@ xdg_toplevel_view_append_children(struct view *self, struct wl_array *children)
 		struct view **child = wl_array_add(children, sizeof(*child));
 		*child = view;
 	}
+}
+
+static bool
+xdg_toplevel_view_is_modal_dialog(struct view *view)
+{
+	struct wlr_xdg_toplevel *toplevel = xdg_toplevel_from_view(view);
+	struct wlr_xdg_dialog_v1 *dialog =
+		wlr_xdg_dialog_v1_try_from_wlr_xdg_toplevel(toplevel);
+	if (!dialog) {
+		return false;
+	}
+	return dialog->modal;
 }
 
 static void
@@ -639,6 +725,10 @@ xdg_toplevel_view_set_fullscreen(struct view *view, bool fullscreen)
 		xdg_toplevel_from_view(view), fullscreen);
 	if (serial > 0) {
 		set_pending_configure_serial(view, serial);
+	}
+	/* Disable background fill immediately on leaving fullscreen */
+	if (!fullscreen) {
+		disable_fullscreen_bg(view);
 	}
 }
 
@@ -702,35 +792,14 @@ xdg_toplevel_view_notify_tiled(struct view *view)
 	}
 }
 
-static struct view *
-lookup_view_by_xdg_toplevel(struct server *server,
-		struct wlr_xdg_toplevel *xdg_toplevel)
-{
-	struct view *view;
-	wl_list_for_each(view, &server->views, link) {
-		if (view->type != LAB_XDG_SHELL_VIEW) {
-			continue;
-		}
-		if (xdg_toplevel_from_view(view) == xdg_toplevel) {
-			return view;
-		}
-	}
-	return NULL;
-}
-
 static void
 set_initial_position(struct view *view)
 {
-	struct wlr_xdg_toplevel *parent_xdg_toplevel =
-		xdg_toplevel_from_view(view)->parent;
-
 	view_constrain_size_to_that_of_usable_area(view);
 
-	if (parent_xdg_toplevel) {
+	struct view *parent = xdg_toplevel_view_get_parent(view);
+	if (parent) {
 		/* Child views are center-aligned relative to their parents */
-		struct view *parent = lookup_view_by_xdg_toplevel(
-			view->server, parent_xdg_toplevel);
-		assert(parent);
 		view_set_output(view, parent->output);
 		view_center(view, &parent->pending);
 		return;
@@ -740,57 +809,13 @@ set_initial_position(struct view *view)
 	view_place_by_policy(view, /* allow_cursor */ true, rc.placement_policy);
 }
 
-static const char *
-xdg_toplevel_view_get_string_prop(struct view *view, const char *prop)
-{
-	struct xdg_toplevel_view *xdg_view = xdg_toplevel_view_from_view(view);
-	struct wlr_xdg_toplevel *xdg_toplevel = xdg_view->xdg_surface
-		? xdg_view->xdg_surface->toplevel
-		: NULL;
-	if (!xdg_toplevel) {
-		/*
-		 * This may happen due to a matchOnce rule when
-		 * a view is destroyed while A-Tab is open. See
-		 * https://github.com/labwc/labwc/issues/1082#issuecomment-1716137180
-		 */
-		return "";
-	}
-
-	if (!strcmp(prop, "title")) {
-		return xdg_toplevel->title ? xdg_toplevel->title : "";
-	}
-	if (!strcmp(prop, "app_id")) {
-		return xdg_toplevel->app_id ? xdg_toplevel->app_id : "";
-	}
-	return "";
-}
-
 static void
-init_foreign_toplevel(struct view *view)
+handle_map(struct wl_listener *listener, void *data)
 {
-	assert(!view->foreign_toplevel);
-	view->foreign_toplevel = foreign_toplevel_create(view);
-
-	struct wlr_xdg_toplevel *toplevel = xdg_toplevel_from_view(view);
-	if (!toplevel->parent) {
-		return;
-	}
-	struct wlr_xdg_surface *surface = toplevel->parent->base;
-	struct view *parent = surface->data;
-	if (!parent->foreign_toplevel) {
-		return;
-	}
-	foreign_toplevel_set_parent(view->foreign_toplevel, parent->foreign_toplevel);
-}
-
-static void
-xdg_toplevel_view_map(struct view *view)
-{
+	struct view *view = wl_container_of(listener, view, mappable.map);
 	if (view->mapped) {
 		return;
 	}
-
-	view->mapped = true;
 
 	/*
 	 * An output should have been chosen when the surface was first
@@ -799,16 +824,8 @@ xdg_toplevel_view_map(struct view *view)
 	if (!view->output) {
 		view_set_output(view, output_nearest_to_cursor(view->server));
 	}
-	struct wlr_xdg_surface *xdg_surface = xdg_surface_from_view(view);
-	wlr_scene_node_set_enabled(&view->scene_tree->node, true);
 
-	if (!view->foreign_toplevel) {
-		init_foreign_toplevel(view);
-		/*
-		 * Initial outputs will be synced via
-		 * view->events.new_outputs on view_moved()
-		 */
-	}
+	view->mapped = true;
 
 	if (!view->been_mapped) {
 		if (view_wants_decorations(view)) {
@@ -822,6 +839,8 @@ xdg_toplevel_view_map(struct view *view)
 		 * dimensions remain zero until handle_commit().
 		 */
 		if (wlr_box_empty(&view->pending)) {
+			struct wlr_xdg_surface *xdg_surface =
+				xdg_surface_from_view(view);
 			view->pending.width = xdg_surface->geometry.width;
 			view->pending.height = xdg_surface->geometry.height;
 		}
@@ -832,6 +851,9 @@ xdg_toplevel_view_map(struct view *view)
 		if (view_is_floating(view)) {
 			set_initial_position(view);
 		}
+
+		/* Disable background fill at map (paranoid?) */
+		disable_fullscreen_bg(view);
 
 		/*
 		 * Set initial "current" position directly before
@@ -848,22 +870,12 @@ xdg_toplevel_view_map(struct view *view)
 }
 
 static void
-xdg_toplevel_view_unmap(struct view *view, bool client_request)
+handle_unmap(struct wl_listener *listener, void *data)
 {
+	struct view *view = wl_container_of(listener, view, mappable.unmap);
 	if (view->mapped) {
 		view->mapped = false;
-		wlr_scene_node_set_enabled(&view->scene_tree->node, false);
 		view_impl_unmap(view);
-	}
-
-	/*
-	 * If the view was explicitly unmapped by the client (rather
-	 * than just minimized), destroy the foreign toplevel handle so
-	 * the unmapped view doesn't show up in panels and the like.
-	 */
-	if (client_request && view->foreign_toplevel) {
-		foreign_toplevel_destroy(view->foreign_toplevel);
-		view->foreign_toplevel = NULL;
 	}
 }
 
@@ -884,16 +896,15 @@ xdg_view_get_pid(struct view *view)
 static const struct view_impl xdg_toplevel_view_impl = {
 	.configure = xdg_toplevel_view_configure,
 	.close = xdg_toplevel_view_close,
-	.get_string_prop = xdg_toplevel_view_get_string_prop,
-	.map = xdg_toplevel_view_map,
 	.set_activated = xdg_toplevel_view_set_activated,
 	.set_fullscreen = xdg_toplevel_view_set_fullscreen,
 	.notify_tiled = xdg_toplevel_view_notify_tiled,
-	.unmap = xdg_toplevel_view_unmap,
 	.maximize = xdg_toplevel_view_maximize,
 	.minimize = xdg_toplevel_view_minimize,
+	.get_parent = xdg_toplevel_view_get_parent,
 	.get_root = xdg_toplevel_view_get_root,
 	.append_children = xdg_toplevel_view_append_children,
+	.is_modal_dialog = xdg_toplevel_view_is_modal_dialog,
 	.get_size_hints = xdg_toplevel_view_get_size_hints,
 	.contains_window_type = xdg_toplevel_view_contains_window_type,
 	.get_pid = xdg_view_get_pid,
@@ -988,8 +999,6 @@ handle_new_xdg_toplevel(struct wl_listener *listener, void *data)
 
 	assert(xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL);
 
-	wlr_xdg_surface_ping(xdg_surface);
-
 	struct xdg_toplevel_view *xdg_toplevel_view = znew(*xdg_toplevel_view);
 	struct view *view = &xdg_toplevel_view->base;
 
@@ -1057,7 +1066,8 @@ handle_new_xdg_toplevel(struct wl_listener *listener, void *data)
 	view->surface = xdg_surface->surface;
 	view->surface->data = tree;
 
-	view_connect_map(view, xdg_surface->surface);
+	mappable_connect(&view->mappable, xdg_surface->surface,
+		handle_map, handle_unmap);
 
 	struct wlr_xdg_toplevel *toplevel = xdg_surface->toplevel;
 	CONNECT_SIGNAL(toplevel, view, destroy);
@@ -1075,6 +1085,7 @@ handle_new_xdg_toplevel(struct wl_listener *listener, void *data)
 	CONNECT_SIGNAL(xdg_surface, xdg_toplevel_view, new_popup);
 
 	wl_list_insert(&server->views, &view->link);
+	view->creation_id = server->next_view_creation_id++;
 }
 
 static void
@@ -1139,6 +1150,8 @@ xdg_shell_init(struct server *server)
 	server->xdg_toplevel_icon_set_icon.notify = handle_xdg_toplevel_icon_set_icon;
 	wl_signal_add(&server->xdg_toplevel_icon_manager->events.set_icon,
 		&server->xdg_toplevel_icon_set_icon);
+
+	wlr_xdg_wm_dialog_v1_create(server->wl_display, 1);
 }
 
 void
