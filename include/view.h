@@ -275,7 +275,9 @@ struct view {
 		struct wl_signal destroy;
 	} events;
 
+	/* Android */
 	BufferManager* buffer_presenter;
+	struct wlr_ahb_buffer *android_buffer;
 };
 
 struct view_query {

@@ -326,6 +326,7 @@ struct server {
 		void *data;
 		void (*view_add)(struct view *view, void *data);
 		void (*view_remove)(struct view *view, void *data);
+		void (*view_commit)(struct view *view);
 	} callbacks;
 
 };

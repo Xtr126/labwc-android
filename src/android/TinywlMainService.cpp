@@ -11,14 +11,16 @@
 #include <android/looper.h>
 #include <assert.h>
 #include <cassert>
-#include "ahb_wlr_allocator.h"
 
 extern "C" {
+  #include "ahb_wlr_allocator.h"
   #include "labwc.h"
   #include "theme.h"
   #include "view.h"
   #include <wlr/util/log.h>
   #include <wlr/types/wlr_xdg_shell.h>
+  #include <wlr/render/drm_format_set.h>
+  #include "client_renderer.h"
 }
 
 namespace tinywl {
@@ -73,6 +75,24 @@ namespace tinywl {
         server.callbacks.data = this;
 
         server.callbacks.view_add = [](struct view *view, void* data) {
+
+          if (view->android_buffer == NULL) {
+            assert(view->surface->buffer != NULL);
+
+            /* Get the format from the client buffer
+            struct wlr_buffer *client_buffer = &toplevel->xdg_toplevel->base->surface->buffer->base;
+            struct wlr_dmabuf_attributes attribs;
+            wlr_buffer_get_dmabuf(client_buffer, &attribs);
+            const struct wlr_drm_format format = {attribs.format};*/
+
+            const struct wlr_drm_format format = {AHB_FORMAT_PREFERRED_DRM};
+            
+            // Create an AHardwareBuffer backed wlr_buffer for presenting
+            struct wlr_box* geo_box = &view->pending;
+            struct wlr_buffer* buffer = wlr_allocator_create_buffer(view->server->allocator, geo_box->width, geo_box->height, &format);
+            view->android_buffer = get_ahb_buffer_from_buffer(buffer);
+          }
+
           auto thiz = reinterpret_cast<TinywlMainService *>(data);
           std::string appId;
           std::string title;
@@ -113,6 +133,17 @@ namespace tinywl {
               (long)view);          
         };
         
+        server.callbacks.view_commit = [](struct view *view) {
+          if (view->surface->buffer != NULL) {
+            if (view->buffer_presenter != NULL) {
+              struct wlr_buffer *src_buffer = &view->surface->buffer->base;
+              struct wlr_buffer *dst_buffer = &view->android_buffer->base;
+              render_client_buffer_to_buffer(view->server->renderer, src_buffer, dst_buffer);
+              buffer_presenter_send_buffer(view->buffer_presenter, view->android_buffer->ahb, -1, NULL, NULL);
+              wlr_log(WLR_INFO, "sent buffer");
+            }
+          }
+        };
     }
 
     const std::shared_ptr<TinywlInputService> mInputService = ndk::SharedRefBase::make<tinywl::TinywlInputService>();
