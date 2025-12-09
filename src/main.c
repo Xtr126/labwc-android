@@ -120,12 +120,6 @@ send_signal_to_labwc_pid(int signal)
 	kill(pid, signal);
 }
 
-struct idle_ctx {
-	struct server *server;
-	const char *primary_client;
-	const char *startup_cmd;
-};
-
 static void
 idle_callback(void *data)
 {
@@ -149,8 +143,7 @@ idle_callback(void *data)
 	}
 }
 
-int
-labwc_init(unsigned int width, unsigned int height, struct server* server, struct theme *theme, int argc, char **argv)
+struct idle_ctx labwc_init(unsigned int width, unsigned int height, struct server* server, struct theme *theme, int argc, char **argv)
 {
 	char *startup_cmd = NULL;
 	char *primary_client = NULL;
@@ -255,18 +248,16 @@ labwc_init(unsigned int width, unsigned int height, struct server* server, struc
 
 	menu_init(server);
 
-	/* Delay startup of applications until the event loop is ready */
-	struct idle_ctx idle_ctx = {
+	return (struct idle_ctx) {
 		.server = server,
 		.primary_client = primary_client,
 		.startup_cmd = startup_cmd
 	};
-	wl_event_loop_add_idle(server->wl_event_loop, idle_callback, &idle_ctx);
-
-	return 0;
 }
 
-void labwc_run(struct server *server, struct theme *theme) {
+void labwc_run(struct server *server, struct theme *theme, struct idle_ctx* idle_ctx) {
+	/* Delay startup of applications until the event loop is ready */
+	wl_event_loop_add_idle(server->wl_event_loop, idle_callback, idle_ctx);
 	wl_display_run(server->wl_display);
 
 	session_shutdown(server);

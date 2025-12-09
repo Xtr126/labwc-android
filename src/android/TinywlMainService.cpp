@@ -153,7 +153,7 @@ Java_com_xtr_tinywl_Tinywl_runTinywlLoop(JNIEnv *env, jclass clazz, jobjectArray
 
   struct theme theme = { 0 };
 
-  labwc_init(1280, 720, &gService->server, &theme, argc, argStrings.data());
+  auto idle_ctx = labwc_init(1280, 720, &gService->server, &theme, argc, argStrings.data());
   gService->mInputService->setTinywlServer(&gService->server);
   
   /* Handle event loop destroy */
@@ -165,7 +165,7 @@ Java_com_xtr_tinywl_Tinywl_runTinywlLoop(JNIEnv *env, jclass clazz, jobjectArray
   wl_event_loop_add_destroy_listener(loop, &gService->mInputService->event_loop_destroy);
 
   // Run loop
-  labwc_run(&gService->server, &theme);
+  labwc_run(&gService->server, &theme, &idle_ctx);
 }
 
 extern "C"

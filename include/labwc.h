@@ -454,7 +454,13 @@ void create_constraint(struct wl_listener *listener, void *data);
 void constrain_cursor(struct server *server, struct wlr_pointer_constraint_v1
 	*constraint);
 
-int labwc_init(unsigned int width, unsigned int height, struct server* server, struct theme *theme, int argc, char **argv);
-void labwc_run(struct server *server, struct theme *theme);
+struct idle_ctx {
+	struct server *server;
+	const char *primary_client;
+	const char *startup_cmd;
+};
+
+struct idle_ctx labwc_init(unsigned int width, unsigned int height, struct server* server, struct theme *theme, int argc, char **argv);
+void labwc_run(struct server *server, struct theme *theme, struct idle_ctx* idle_ctx);
 
 #endif /* LABWC_H */
