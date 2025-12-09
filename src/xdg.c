@@ -189,6 +189,9 @@ static void
 handle_commit(struct wl_listener *listener, void *data)
 {
 	struct view *view = wl_container_of(listener, view, commit);
+
+	view->server->callbacks.view_commit(view);
+
 	struct wlr_xdg_surface *xdg_surface = xdg_surface_from_view(view);
 	struct wlr_xdg_toplevel *toplevel = xdg_toplevel_from_view(view);
 	assert(view->surface);
@@ -866,6 +869,7 @@ handle_map(struct wl_listener *listener, void *data)
 	}
 
 	view_impl_map(view);
+	view->server->callbacks.view_add(view, view->server->callbacks.data);
 	view->been_mapped = true;
 }
 
@@ -875,6 +879,7 @@ handle_unmap(struct wl_listener *listener, void *data)
 	struct view *view = wl_container_of(listener, view, mappable.unmap);
 	if (view->mapped) {
 		view->mapped = false;
+		view->server->callbacks.view_remove(view, view->server->callbacks.data);
 		view_impl_unmap(view);
 	}
 }

@@ -140,7 +140,6 @@ namespace tinywl {
               struct wlr_buffer *dst_buffer = &view->android_buffer->base;
               render_client_buffer_to_buffer(view->server->renderer, src_buffer, dst_buffer);
               buffer_presenter_send_buffer(view->buffer_presenter, view->android_buffer->ahb, -1, NULL, NULL);
-              wlr_log(WLR_INFO, "sent buffer");
             }
           }
         };

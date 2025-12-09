@@ -2433,16 +2433,6 @@ view_update_visibility(struct view *view)
 	 * Hide it if a fullscreen view is shown (or uncovered).
 	 */
 	desktop_update_top_layer_visibility(server);
-	view->server->callbacks.view_add(view, view->server->callbacks.data);
-}
-
-static void
-handle_unmap(struct wl_listener *listener, void *data)
-{
-	struct view *view = wl_container_of(listener, view, mappable.unmap);
-	view->impl->unmap(view, /* client_request */ true);
-	view->server->callbacks.view_remove(view, view->server->callbacks.data);
-}
 
 	/*
 	 * We may need to disable adaptive sync if view was fullscreen.
