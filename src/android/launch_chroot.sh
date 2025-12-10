@@ -6,8 +6,8 @@ TARGET_USER=""
 usage() {
     echo "Usage: $0 --chroot-path <path> --user <username>"
     echo ""
-    echo "  --chroot-path  The path to the chroot directory (replaces \$1)."
-    echo "  --user         The target username inside the chroot (replaces \$2)."
+    echo "  --chroot-path  The path to the chroot directory."
+    echo "  --user         The target username inside the chroot."
     exit 1
 }
 
@@ -47,22 +47,11 @@ if [ -z "$CHROOT_PATH" ] || [ -z "$TARGET_USER" ]; then
     usage
 fi
 
-# Modify permissions for Wayland display socket (if it exists)
-if [ -n "$WAYLAND_DISPLAY" ] && [ -e "$TMPDIR/$WAYLAND_DISPLAY" ]; then
-    chmod 666 "$TMPDIR/$WAYLAND_DISPLAY"
-fi
+export XDG_RUNTIME_DIR_IN_CHROOT="/tmp/x-termux"
+export XDG_RUNTIME_DIR="$CHROOT_PATH/$XDG_RUNTIME_DIR_IN_CHROOT"
+export TMPDIR="$CHROOT_PATH/tmp"
 
-su -c mkdir -p "$CHROOT_PATH/tmp/x-termux"
+su -c mkdir -p "$XDG_RUNTIME_DIR"
+su -c chmod 777 "$XDG_RUNTIME_DIR"
 
-# Bind-mount termux TMPDIR to the chroot's mount point
-# This allows the chroot environment to access the wayland socket
-su -c mount --bind "$TMPDIR" "$CHROOT_PATH/tmp/x-termux"
-
-# Environment variables for programs inside the chroot
-export XDG_RUNTIME_DIR=/tmp/x-termux
-unset TMPDIR
-
-exec su -c chroot $CHROOT_PATH su $TARGET_USER
-
-# Undo bind-mount 
-su -c umount "$CHROOT_PATH/tmp/x-termux"
+sh ./start.sh -s "sh ./chroot_shell.sh --chroot-path \"$CHROOT_PATH\" --user $TARGET_USER"

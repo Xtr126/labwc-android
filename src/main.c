@@ -139,7 +139,11 @@ idle_callback(void *data)
 
 	session_autostart_init(ctx->server);
 	if (ctx->startup_cmd) {
-		spawn_async_no_shell(ctx->startup_cmd);
+		// spawn_async_no_shell(ctx->startup_cmd);
+		if (fork() == 0) {
+			execl("/bin/sh", "/bin/sh", "-c", ctx->startup_cmd, (void *)NULL);
+		}
+
 	}
 }
 
