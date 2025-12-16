@@ -8,6 +8,7 @@
 #include "input/cursor.h"
 #include "overlay.h"
 #include <wlr/config.h>
+#include "android_callbacks.h"
 
 #define XCURSOR_DEFAULT "left_ptr"
 #define XCURSOR_SIZE 24
@@ -324,13 +325,7 @@ struct server {
 
 	pid_t primary_client_pid;
 
-	struct callbacks {
-		void *data;
-		void (*view_add)(struct view *view, void *data);
-		void (*view_remove)(struct view *view, void *data);
-		void (*view_commit)(struct view *view);
-	} callbacks;
-
+	struct android_callbacks callbacks;
 };
 
 void xdg_popup_create(struct view *view, struct wlr_xdg_popup *wlr_popup);

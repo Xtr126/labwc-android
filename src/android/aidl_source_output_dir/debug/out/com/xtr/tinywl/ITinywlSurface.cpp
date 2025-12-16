@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Using: /home/hp/Android/Sdk/build-tools/35.0.0/aidl --lang=ndk -o/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -h/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/debug/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/cpp/aidl -d/tmp/aidl4154290964388247707.d /home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl/com/xtr/tinywl/ITinywlSurface.aidl
+ * Using: /home/hp/Android/Sdk/build-tools/35.0.0/aidl --lang=ndk -o/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -h/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/debug/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/cpp/aidl -d/tmp/aidl3252360008859553080.d /home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl/com/xtr/tinywl/ITinywlSurface.aidl
  */
 #include "aidl/com/xtr/tinywl/ITinywlSurface.h"
 
@@ -20,11 +20,15 @@ static binder_status_t _aidl_com_xtr_tinywl_ITinywlSurface_onTransact(AIBinder* 
   switch (_aidl_code) {
     case (FIRST_CALL_TRANSACTION + 0 /*onSurfaceCreated*/): {
       ::aidl::com::xtr::tinywl::XdgTopLevel in_xdgToplevel;
+      ::aidl::android::view::Surface in_surface;
 
       _aidl_ret_status = ::ndk::AParcel_readData(_aidl_in, &in_xdgToplevel);
       if (_aidl_ret_status != STATUS_OK) break;
 
-      ::ndk::ScopedAStatus _aidl_status = _aidl_impl->onSurfaceCreated(in_xdgToplevel);
+      _aidl_ret_status = ::ndk::AParcel_readData(_aidl_in, &in_surface);
+      if (_aidl_ret_status != STATUS_OK) break;
+
+      ::ndk::ScopedAStatus _aidl_status = _aidl_impl->onSurfaceCreated(in_xdgToplevel, in_surface);
       _aidl_ret_status = AParcel_writeStatusHeader(_aidl_out, _aidl_status.get());
       if (_aidl_ret_status != STATUS_OK) break;
 
@@ -34,11 +38,15 @@ static binder_status_t _aidl_com_xtr_tinywl_ITinywlSurface_onTransact(AIBinder* 
     }
     case (FIRST_CALL_TRANSACTION + 1 /*onSurfaceChanged*/): {
       ::aidl::com::xtr::tinywl::XdgTopLevel in_xdgToplevel;
+      ::aidl::android::view::Surface in_surface;
 
       _aidl_ret_status = ::ndk::AParcel_readData(_aidl_in, &in_xdgToplevel);
       if (_aidl_ret_status != STATUS_OK) break;
 
-      ::ndk::ScopedAStatus _aidl_status = _aidl_impl->onSurfaceChanged(in_xdgToplevel);
+      _aidl_ret_status = ::ndk::AParcel_readData(_aidl_in, &in_surface);
+      if (_aidl_ret_status != STATUS_OK) break;
+
+      ::ndk::ScopedAStatus _aidl_status = _aidl_impl->onSurfaceChanged(in_xdgToplevel, in_surface);
       _aidl_ret_status = AParcel_writeStatusHeader(_aidl_out, _aidl_status.get());
       if (_aidl_ret_status != STATUS_OK) break;
 
@@ -69,7 +77,7 @@ static AIBinder_Class* _g_aidl_com_xtr_tinywl_ITinywlSurface_clazz = ::ndk::ICIn
 BpTinywlSurface::BpTinywlSurface(const ::ndk::SpAIBinder& binder) : BpCInterface(binder) {}
 BpTinywlSurface::~BpTinywlSurface() {}
 
-::ndk::ScopedAStatus BpTinywlSurface::onSurfaceCreated(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgToplevel) {
+::ndk::ScopedAStatus BpTinywlSurface::onSurfaceCreated(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgToplevel, const ::aidl::android::view::Surface& in_surface) {
   binder_status_t _aidl_ret_status = STATUS_OK;
   ::ndk::ScopedAStatus _aidl_status;
   ::ndk::ScopedAParcel _aidl_in;
@@ -79,6 +87,9 @@ BpTinywlSurface::~BpTinywlSurface() {}
   if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
 
   _aidl_ret_status = ::ndk::AParcel_writeData(_aidl_in.get(), in_xdgToplevel);
+  if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
+
+  _aidl_ret_status = ::ndk::AParcel_writeData(_aidl_in.get(), in_surface);
   if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
 
   _aidl_ret_status = AIBinder_transact(
@@ -92,7 +103,7 @@ BpTinywlSurface::~BpTinywlSurface() {}
     #endif  // BINDER_STABILITY_SUPPORT
     );
   if (_aidl_ret_status == STATUS_UNKNOWN_TRANSACTION && ITinywlSurface::getDefaultImpl()) {
-    _aidl_status = ITinywlSurface::getDefaultImpl()->onSurfaceCreated(in_xdgToplevel);
+    _aidl_status = ITinywlSurface::getDefaultImpl()->onSurfaceCreated(in_xdgToplevel, in_surface);
     goto _aidl_status_return;
   }
   if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
@@ -106,7 +117,7 @@ BpTinywlSurface::~BpTinywlSurface() {}
   _aidl_status_return:
   return _aidl_status;
 }
-::ndk::ScopedAStatus BpTinywlSurface::onSurfaceChanged(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgToplevel) {
+::ndk::ScopedAStatus BpTinywlSurface::onSurfaceChanged(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgToplevel, const ::aidl::android::view::Surface& in_surface) {
   binder_status_t _aidl_ret_status = STATUS_OK;
   ::ndk::ScopedAStatus _aidl_status;
   ::ndk::ScopedAParcel _aidl_in;
@@ -116,6 +127,9 @@ BpTinywlSurface::~BpTinywlSurface() {}
   if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
 
   _aidl_ret_status = ::ndk::AParcel_writeData(_aidl_in.get(), in_xdgToplevel);
+  if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
+
+  _aidl_ret_status = ::ndk::AParcel_writeData(_aidl_in.get(), in_surface);
   if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
 
   _aidl_ret_status = AIBinder_transact(
@@ -129,7 +143,7 @@ BpTinywlSurface::~BpTinywlSurface() {}
     #endif  // BINDER_STABILITY_SUPPORT
     );
   if (_aidl_ret_status == STATUS_UNKNOWN_TRANSACTION && ITinywlSurface::getDefaultImpl()) {
-    _aidl_status = ITinywlSurface::getDefaultImpl()->onSurfaceChanged(in_xdgToplevel);
+    _aidl_status = ITinywlSurface::getDefaultImpl()->onSurfaceChanged(in_xdgToplevel, in_surface);
     goto _aidl_status_return;
   }
   if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
@@ -239,12 +253,12 @@ const std::shared_ptr<ITinywlSurface>& ITinywlSurface::getDefaultImpl() {
   return ITinywlSurface::default_impl;
 }
 std::shared_ptr<ITinywlSurface> ITinywlSurface::default_impl = nullptr;
-::ndk::ScopedAStatus ITinywlSurfaceDefault::onSurfaceCreated(const ::aidl::com::xtr::tinywl::XdgTopLevel& /*in_xdgToplevel*/) {
+::ndk::ScopedAStatus ITinywlSurfaceDefault::onSurfaceCreated(const ::aidl::com::xtr::tinywl::XdgTopLevel& /*in_xdgToplevel*/, const ::aidl::android::view::Surface& /*in_surface*/) {
   ::ndk::ScopedAStatus _aidl_status;
   _aidl_status.set(AStatus_fromStatus(STATUS_UNKNOWN_TRANSACTION));
   return _aidl_status;
 }
-::ndk::ScopedAStatus ITinywlSurfaceDefault::onSurfaceChanged(const ::aidl::com::xtr::tinywl::XdgTopLevel& /*in_xdgToplevel*/) {
+::ndk::ScopedAStatus ITinywlSurfaceDefault::onSurfaceChanged(const ::aidl::com::xtr::tinywl::XdgTopLevel& /*in_xdgToplevel*/, const ::aidl::android::view::Surface& /*in_surface*/) {
   ::ndk::ScopedAStatus _aidl_status;
   _aidl_status.set(AStatus_fromStatus(STATUS_UNKNOWN_TRANSACTION));
   return _aidl_status;

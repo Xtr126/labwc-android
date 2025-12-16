@@ -212,6 +212,9 @@ handle_output_destroy(struct wl_listener *listener, void *data)
 	 */
 	output->wlr_output->data = NULL;
 
+	/* Android */
+	server->callbacks.output_destroy(output);
+
 	/*
 	 * output->scene_output (if still around at this point) is
 	 * destroyed automatically when the wlr_output is destroyed
@@ -610,6 +613,8 @@ handle_new_output(struct wl_listener *listener, void *data)
 	}
 
 	do_output_layout_change(server);
+
+	server->callbacks.output_init(output);
 }
 
 static void output_manager_init(struct server *server);

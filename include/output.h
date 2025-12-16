@@ -4,6 +4,7 @@
 
 #include <wlr/types/wlr_output.h>
 #include "common/edge.h"
+#include "buffer_presenter.h"
 
 #define LAB_NR_LAYERS (4)
 
@@ -46,6 +47,9 @@ struct output {
 	uint64_t id_bit;
 
 	bool gamma_lut_changed;
+
+	/* Android */
+	BufferManager* buffer_presenter;
 };
 
 #undef LAB_NR_LAYERS

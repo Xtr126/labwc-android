@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Using: /home/hp/Android/Sdk/build-tools/35.0.0/aidl --lang=ndk -o/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -h/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/debug/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/cpp/aidl -d/tmp/aidl13715495313705502561.d /home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl/com/xtr/tinywl/TinywlXdgTopLevelCallback.aidl
+ * Using: /home/hp/Android/Sdk/build-tools/35.0.0/aidl --lang=ndk -o/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -h/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/debug/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/cpp/aidl -d/tmp/aidl12317504132085319438.d /home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl/com/xtr/tinywl/TinywlXdgTopLevelCallback.aidl
  */
 #pragma once
 
@@ -32,11 +32,11 @@ public:
   explicit ITinywlXdgTopLevelCallbackDelegator(const std::shared_ptr<ITinywlXdgTopLevelCallback> &impl) : _impl(impl) {
   }
 
-  ::ndk::ScopedAStatus addXdgTopLevel(const std::string& in_appId, const std::string& in_title, int64_t in_nativePtr, const ::aidl::com::xtr::tinywl::WlrBox& in_geoBox) override {
-    return _impl->addXdgTopLevel(in_appId, in_title, in_nativePtr, in_geoBox);
+  ::ndk::ScopedAStatus addXdgTopLevel(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgTopLevel, const ::aidl::com::xtr::tinywl::WlrBox& in_geoBox) override {
+    return _impl->addXdgTopLevel(in_xdgTopLevel, in_geoBox);
   }
-  ::ndk::ScopedAStatus removeXdgTopLevel(const std::string& in_appId, const std::string& in_title, int64_t in_nativePtr) override {
-    return _impl->removeXdgTopLevel(in_appId, in_title, in_nativePtr);
+  ::ndk::ScopedAStatus removeXdgTopLevel(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgTopLevel) override {
+    return _impl->removeXdgTopLevel(in_xdgTopLevel);
   }
 protected:
 private:

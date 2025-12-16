@@ -1,6 +1,7 @@
 #include "aidl/android/hardware/input/common/Axis.h"
 #include "aidl/android/hardware/input/common/MotionEvent.h"
 #include "aidl/com/android/server/inputflinger/KeyEvent.h"
+#include "aidl_source_output_dir/debug/out/aidl/com/xtr/tinywl/XdgTopLevel.h"
 #include <aidl/tinywl/BnTinywlInput.h>
 #include <android/keycodes.h>
 #include <cstdint>
@@ -52,7 +53,8 @@ namespace tinywl {
     };
 
 
-    void TinywlInputService::sendPointerButtonEvent(const MotionEvent& in_event, struct view *view) {
+
+    void TinywlInputService::sendPointerButtonEvent(const MotionEvent& in_event) {
       struct wlr_pointer_button_event wlr_event = {
           .pointer = &pointer,
           .time_msec = (uint32_t)in_event.eventTime,
@@ -86,24 +88,38 @@ namespace tinywl {
       wl_signal_emit_mutable(&pointer.events.frame, &pointer);
     }
 
-    void TinywlInputService::sendPointerPosition(const MotionEvent& in_event, struct view *view) {
+    void TinywlInputService::sendPointerPosition(const MotionEvent& in_event, const aidl::com::xtr::tinywl::XdgTopLevel::NativePtrType& nativePtrType, void *view) {
       float x = PointerCoords_getAxisValue(in_event.pointerCoords.front(), static_cast<int32_t>(Axis::X));
       float y = PointerCoords_getAxisValue(in_event.pointerCoords.front(), static_cast<int32_t>(Axis::Y));
-      x += view->current.x;
-      y += view->current.y;
+      if (nativePtrType == XdgTopLevel::NativePtrType::VIEW) {
+        auto l_view = reinterpret_cast<struct view *>(view);  
+        x += l_view->current.x;
+        y += l_view->current.y;
+      }
       
       struct wlr_pointer_motion_absolute_event wlr_event = {
         .pointer = &pointer,
         .time_msec = static_cast<uint32_t>(in_event.eventTime),
-        .x = x / width,
-        .y = y / height,
+        .x=0,
+        .y=0
       };
+
+      if (nativePtrType == XdgTopLevel::NativePtrType::VIEW) {
+        auto l_view = reinterpret_cast<struct view *>(view);  
+        wlr_event.x = x / l_view->pending.width;
+        wlr_event.y = y / l_view->pending.height;
+      } else {
+        auto output = reinterpret_cast<struct output *>(view);  
+        wlr_event.x = x / output->wlr_output->width;
+        wlr_event.y = y / output->wlr_output->height;
+      }
+      
 
       wl_signal_emit_mutable(&pointer.events.motion_absolute, &wlr_event);
       wl_signal_emit_mutable(&pointer.events.frame, &pointer);
     }
 
-    void TinywlInputService::sendScrollEvent(const MotionEvent& in_event, struct view *view) {
+    void TinywlInputService::sendScrollEvent(const MotionEvent& in_event) {
       float delta = PointerCoords_getAxisValue(in_event.pointerCoords.front(), static_cast<int32_t>(Axis::Y));
       struct wlr_pointer_axis_event wlr_event = {
         .pointer = &pointer,
@@ -154,25 +170,28 @@ namespace tinywl {
             continue;
           }
 
-          struct view* view = reinterpret_cast<struct view*>(in_event->nativePtr);
+          void* view = reinterpret_cast<void*>(in_event->nativePtr);
           
           std::lock_guard<std::mutex> lock(thiz->mutex_);
-          if (thiz->views.find(view) == thiz->views.end()) {
+          if (!thiz->views.contains(view)) {
             continue;
           }
+
 
           switch (in_event->event.action) {
             case Action::BUTTON_PRESS:
             case Action::BUTTON_RELEASE:
-              thiz->sendPointerButtonEvent(in_event->event, view);
+              thiz->sendPointerButtonEvent(in_event->event);
               break;
             case Action::MOVE:
             case Action::HOVER_ENTER:
-            case Action::HOVER_EXIT:
-              thiz->sendPointerPosition(in_event->event, view);
+            case Action::HOVER_EXIT: {
+              auto nativePtrType = thiz->views[view];
+              thiz->sendPointerPosition(in_event->event, nativePtrType, view);
               break;
+            }
             case Action::SCROLL:
-              thiz->sendScrollEvent(in_event->event, view);
+              thiz->sendScrollEvent(in_event->event);
               break;
             default:
                 // Skip other actions

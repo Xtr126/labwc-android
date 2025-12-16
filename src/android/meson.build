@@ -1,4 +1,5 @@
 labwc_sources += files(
+  'android_output.c',
   'ahb_wlr_allocator.c',
   'client_renderer.c',
 #  'input_receiver.c',

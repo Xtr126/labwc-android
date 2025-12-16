@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Using: /home/hp/Android/Sdk/build-tools/35.0.0/aidl --lang=ndk -o/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -h/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/debug/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/cpp/aidl -d/tmp/aidl13715495313705502561.d /home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl/com/xtr/tinywl/TinywlXdgTopLevelCallback.aidl
+ * Using: /home/hp/Android/Sdk/build-tools/35.0.0/aidl --lang=ndk -o/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -h/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/debug/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/cpp/aidl -d/tmp/aidl12317504132085319438.d /home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl/com/xtr/tinywl/TinywlXdgTopLevelCallback.aidl
  */
 #include "aidl/com/xtr/tinywl/TinywlXdgTopLevelCallback.h"
 
@@ -19,24 +19,16 @@ static binder_status_t _aidl_com_xtr_tinywl_TinywlXdgTopLevelCallback_onTransact
   std::shared_ptr<BnTinywlXdgTopLevelCallback> _aidl_impl = std::static_pointer_cast<BnTinywlXdgTopLevelCallback>(::ndk::ICInterface::asInterface(_aidl_binder));
   switch (_aidl_code) {
     case (FIRST_CALL_TRANSACTION + 0 /*addXdgTopLevel*/): {
-      std::string in_appId;
-      std::string in_title;
-      int64_t in_nativePtr;
+      ::aidl::com::xtr::tinywl::XdgTopLevel in_xdgTopLevel;
       ::aidl::com::xtr::tinywl::WlrBox in_geoBox;
 
-      _aidl_ret_status = ::ndk::AParcel_readData(_aidl_in, &in_appId);
-      if (_aidl_ret_status != STATUS_OK) break;
-
-      _aidl_ret_status = ::ndk::AParcel_readData(_aidl_in, &in_title);
-      if (_aidl_ret_status != STATUS_OK) break;
-
-      _aidl_ret_status = ::ndk::AParcel_readData(_aidl_in, &in_nativePtr);
+      _aidl_ret_status = ::ndk::AParcel_readData(_aidl_in, &in_xdgTopLevel);
       if (_aidl_ret_status != STATUS_OK) break;
 
       _aidl_ret_status = ::ndk::AParcel_readData(_aidl_in, &in_geoBox);
       if (_aidl_ret_status != STATUS_OK) break;
 
-      ::ndk::ScopedAStatus _aidl_status = _aidl_impl->addXdgTopLevel(in_appId, in_title, in_nativePtr, in_geoBox);
+      ::ndk::ScopedAStatus _aidl_status = _aidl_impl->addXdgTopLevel(in_xdgTopLevel, in_geoBox);
       _aidl_ret_status = AParcel_writeStatusHeader(_aidl_out, _aidl_status.get());
       if (_aidl_ret_status != STATUS_OK) break;
 
@@ -45,20 +37,12 @@ static binder_status_t _aidl_com_xtr_tinywl_TinywlXdgTopLevelCallback_onTransact
       break;
     }
     case (FIRST_CALL_TRANSACTION + 1 /*removeXdgTopLevel*/): {
-      std::string in_appId;
-      std::string in_title;
-      int64_t in_nativePtr;
+      ::aidl::com::xtr::tinywl::XdgTopLevel in_xdgTopLevel;
 
-      _aidl_ret_status = ::ndk::AParcel_readData(_aidl_in, &in_appId);
+      _aidl_ret_status = ::ndk::AParcel_readData(_aidl_in, &in_xdgTopLevel);
       if (_aidl_ret_status != STATUS_OK) break;
 
-      _aidl_ret_status = ::ndk::AParcel_readData(_aidl_in, &in_title);
-      if (_aidl_ret_status != STATUS_OK) break;
-
-      _aidl_ret_status = ::ndk::AParcel_readData(_aidl_in, &in_nativePtr);
-      if (_aidl_ret_status != STATUS_OK) break;
-
-      ::ndk::ScopedAStatus _aidl_status = _aidl_impl->removeXdgTopLevel(in_appId, in_title, in_nativePtr);
+      ::ndk::ScopedAStatus _aidl_status = _aidl_impl->removeXdgTopLevel(in_xdgTopLevel);
       _aidl_ret_status = AParcel_writeStatusHeader(_aidl_out, _aidl_status.get());
       if (_aidl_ret_status != STATUS_OK) break;
 
@@ -75,7 +59,7 @@ static AIBinder_Class* _g_aidl_com_xtr_tinywl_TinywlXdgTopLevelCallback_clazz = 
 BpTinywlXdgTopLevelCallback::BpTinywlXdgTopLevelCallback(const ::ndk::SpAIBinder& binder) : BpCInterface(binder) {}
 BpTinywlXdgTopLevelCallback::~BpTinywlXdgTopLevelCallback() {}
 
-::ndk::ScopedAStatus BpTinywlXdgTopLevelCallback::addXdgTopLevel(const std::string& in_appId, const std::string& in_title, int64_t in_nativePtr, const ::aidl::com::xtr::tinywl::WlrBox& in_geoBox) {
+::ndk::ScopedAStatus BpTinywlXdgTopLevelCallback::addXdgTopLevel(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgTopLevel, const ::aidl::com::xtr::tinywl::WlrBox& in_geoBox) {
   binder_status_t _aidl_ret_status = STATUS_OK;
   ::ndk::ScopedAStatus _aidl_status;
   ::ndk::ScopedAParcel _aidl_in;
@@ -84,13 +68,7 @@ BpTinywlXdgTopLevelCallback::~BpTinywlXdgTopLevelCallback() {}
   _aidl_ret_status = AIBinder_prepareTransaction(asBinder().get(), _aidl_in.getR());
   if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
 
-  _aidl_ret_status = ::ndk::AParcel_writeData(_aidl_in.get(), in_appId);
-  if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
-
-  _aidl_ret_status = ::ndk::AParcel_writeData(_aidl_in.get(), in_title);
-  if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
-
-  _aidl_ret_status = ::ndk::AParcel_writeData(_aidl_in.get(), in_nativePtr);
+  _aidl_ret_status = ::ndk::AParcel_writeData(_aidl_in.get(), in_xdgTopLevel);
   if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
 
   _aidl_ret_status = ::ndk::AParcel_writeData(_aidl_in.get(), in_geoBox);
@@ -107,7 +85,7 @@ BpTinywlXdgTopLevelCallback::~BpTinywlXdgTopLevelCallback() {}
     #endif  // BINDER_STABILITY_SUPPORT
     );
   if (_aidl_ret_status == STATUS_UNKNOWN_TRANSACTION && ITinywlXdgTopLevelCallback::getDefaultImpl()) {
-    _aidl_status = ITinywlXdgTopLevelCallback::getDefaultImpl()->addXdgTopLevel(in_appId, in_title, in_nativePtr, in_geoBox);
+    _aidl_status = ITinywlXdgTopLevelCallback::getDefaultImpl()->addXdgTopLevel(in_xdgTopLevel, in_geoBox);
     goto _aidl_status_return;
   }
   if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
@@ -121,7 +99,7 @@ BpTinywlXdgTopLevelCallback::~BpTinywlXdgTopLevelCallback() {}
   _aidl_status_return:
   return _aidl_status;
 }
-::ndk::ScopedAStatus BpTinywlXdgTopLevelCallback::removeXdgTopLevel(const std::string& in_appId, const std::string& in_title, int64_t in_nativePtr) {
+::ndk::ScopedAStatus BpTinywlXdgTopLevelCallback::removeXdgTopLevel(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgTopLevel) {
   binder_status_t _aidl_ret_status = STATUS_OK;
   ::ndk::ScopedAStatus _aidl_status;
   ::ndk::ScopedAParcel _aidl_in;
@@ -130,13 +108,7 @@ BpTinywlXdgTopLevelCallback::~BpTinywlXdgTopLevelCallback() {}
   _aidl_ret_status = AIBinder_prepareTransaction(asBinder().get(), _aidl_in.getR());
   if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
 
-  _aidl_ret_status = ::ndk::AParcel_writeData(_aidl_in.get(), in_appId);
-  if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
-
-  _aidl_ret_status = ::ndk::AParcel_writeData(_aidl_in.get(), in_title);
-  if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
-
-  _aidl_ret_status = ::ndk::AParcel_writeData(_aidl_in.get(), in_nativePtr);
+  _aidl_ret_status = ::ndk::AParcel_writeData(_aidl_in.get(), in_xdgTopLevel);
   if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
 
   _aidl_ret_status = AIBinder_transact(
@@ -150,7 +122,7 @@ BpTinywlXdgTopLevelCallback::~BpTinywlXdgTopLevelCallback() {}
     #endif  // BINDER_STABILITY_SUPPORT
     );
   if (_aidl_ret_status == STATUS_UNKNOWN_TRANSACTION && ITinywlXdgTopLevelCallback::getDefaultImpl()) {
-    _aidl_status = ITinywlXdgTopLevelCallback::getDefaultImpl()->removeXdgTopLevel(in_appId, in_title, in_nativePtr);
+    _aidl_status = ITinywlXdgTopLevelCallback::getDefaultImpl()->removeXdgTopLevel(in_xdgTopLevel);
     goto _aidl_status_return;
   }
   if (_aidl_ret_status != STATUS_OK) goto _aidl_error;
@@ -223,12 +195,12 @@ const std::shared_ptr<ITinywlXdgTopLevelCallback>& ITinywlXdgTopLevelCallback::g
   return ITinywlXdgTopLevelCallback::default_impl;
 }
 std::shared_ptr<ITinywlXdgTopLevelCallback> ITinywlXdgTopLevelCallback::default_impl = nullptr;
-::ndk::ScopedAStatus ITinywlXdgTopLevelCallbackDefault::addXdgTopLevel(const std::string& /*in_appId*/, const std::string& /*in_title*/, int64_t /*in_nativePtr*/, const ::aidl::com::xtr::tinywl::WlrBox& /*in_geoBox*/) {
+::ndk::ScopedAStatus ITinywlXdgTopLevelCallbackDefault::addXdgTopLevel(const ::aidl::com::xtr::tinywl::XdgTopLevel& /*in_xdgTopLevel*/, const ::aidl::com::xtr::tinywl::WlrBox& /*in_geoBox*/) {
   ::ndk::ScopedAStatus _aidl_status;
   _aidl_status.set(AStatus_fromStatus(STATUS_UNKNOWN_TRANSACTION));
   return _aidl_status;
 }
-::ndk::ScopedAStatus ITinywlXdgTopLevelCallbackDefault::removeXdgTopLevel(const std::string& /*in_appId*/, const std::string& /*in_title*/, int64_t /*in_nativePtr*/) {
+::ndk::ScopedAStatus ITinywlXdgTopLevelCallbackDefault::removeXdgTopLevel(const ::aidl::com::xtr::tinywl::XdgTopLevel& /*in_xdgTopLevel*/) {
   ::ndk::ScopedAStatus _aidl_status;
   _aidl_status.set(AStatus_fromStatus(STATUS_UNKNOWN_TRANSACTION));
   return _aidl_status;

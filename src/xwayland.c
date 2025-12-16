@@ -260,6 +260,9 @@ static void
 handle_commit(struct wl_listener *listener, void *data)
 {
 	struct view *view = wl_container_of(listener, view, commit);
+
+	view->server->callbacks.view_commit(view);
+
 	assert(data && data == view->surface);
 
 	/* Must receive commit signal before accessing surface->current* */

@@ -869,7 +869,7 @@ handle_map(struct wl_listener *listener, void *data)
 	}
 
 	view_impl_map(view);
-	view->server->callbacks.view_add(view, view->server->callbacks.data);
+	view->server->callbacks.view_add(view);
 	view->been_mapped = true;
 }
 
@@ -879,7 +879,7 @@ handle_unmap(struct wl_listener *listener, void *data)
 	struct view *view = wl_container_of(listener, view, mappable.unmap);
 	if (view->mapped) {
 		view->mapped = false;
-		view->server->callbacks.view_remove(view, view->server->callbacks.data);
+		view->server->callbacks.view_remove(view);
 		view_impl_unmap(view);
 	}
 }

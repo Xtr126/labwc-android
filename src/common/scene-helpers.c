@@ -7,6 +7,7 @@
 #include <wlr/util/log.h>
 #include "magnifier.h"
 #include "output.h"
+#include "labwc.h"
 
 struct wlr_surface *
 lab_wlr_surface_from_node(struct wlr_scene_node *node)
@@ -102,6 +103,8 @@ lab_wlr_scene_output_commit(struct wlr_scene_output *scene_output,
 	if (state->buffer && magnifier_is_enabled()) {
 		magnifier_draw(output, state->buffer, &additional_damage);
 	}
+
+	output->server->callbacks.output_commit(state->buffer, output);
 
 	bool committed = wlr_output_commit_state(wlr_output, state);
 	/*

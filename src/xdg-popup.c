@@ -100,13 +100,14 @@ static void
 handle_commit(struct wl_listener *listener, void *data)
 {
 	struct xdg_popup *popup = wl_container_of(listener, popup, commit);
+	popup->parent_view->server->callbacks.view_commit(popup->parent_view);
 
 	if (popup->wlr_popup->base->initial_commit) {
 		popup_unconstrain(popup);
 
 		/* Prevent getting called over and over again */
-		wl_list_remove(&popup->commit.link);
-		popup->commit.notify = NULL;
+		// wl_list_remove(&popup->commit.link);
+		// popup->commit.notify = NULL;
 	}
 }
 
