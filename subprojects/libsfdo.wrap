@@ -1,6 +1,0 @@
-[wrap-git]
-url = https://gitlab.freedesktop.org/vyivel/libsfdo.git
-revision = v0.1.4
-
-[provide]
-dependency_names = libsfdo-basedir, libsfdo-desktop, libsfdo-icon
