@@ -39,7 +39,7 @@ namespace tinywl {
     return wlrBox;
   }
 
-  static XdgTopLevel newXdgTopLevelWithType(const std::string& in_appId, const std::string& in_title, int64_t in_nativePtr, const XdgTopLevel::NativePtrType nativePtrType) {
+  static XdgTopLevel newXdgTopLevelWithType(const std::string& in_appId, const std::string& in_title, int64_t in_nativePtr, const NativePtrType nativePtrType) {
     XdgTopLevel toplevel;
     toplevel.appId = in_appId;
     toplevel.title = in_title;
@@ -49,27 +49,26 @@ namespace tinywl {
   }
 
   static XdgTopLevel newXdgTopLevel(const std::string& in_appId, const std::string& in_title, const int64_t in_nativePtr) {
-    return newXdgTopLevelWithType(in_appId, in_title, in_nativePtr, XdgTopLevel::NativePtrType::VIEW);
+    return newXdgTopLevelWithType(in_appId, in_title, in_nativePtr, NativePtrType::VIEW);
   }
 
   class TinywlMainService : public BnTinywlSurface {
   public:
-    ::ndk::ScopedAStatus onSurfaceChanged(const XdgTopLevel &in_xdgToplevel, const ::aidl::android::view::Surface& in_surface) override {
-      if (in_xdgToplevel.nativePtrType == XdgTopLevel::NativePtrType::VIEW) {
-        struct view *view = reinterpret_cast<struct view *>(in_xdgToplevel.nativePtr);
+    ::ndk::ScopedAStatus onSurfaceChanged(int64_t in_nativePtr, ::aidl::com::xtr::tinywl::NativePtrType in_nativePtrType, const ::aidl::android::view::Surface& in_surface) override {
+      if (in_nativePtrType == NativePtrType::VIEW) {
+        struct view *view = reinterpret_cast<struct view *>(in_nativePtr);
         buffer_presenter_destroy(view->buffer_presenter);
-        return onSurfaceCreated(in_xdgToplevel, in_surface);
       } else {
-        struct output *output = reinterpret_cast<struct output *>(in_xdgToplevel.nativePtr);
+        struct output *output = reinterpret_cast<struct output *>(in_nativePtr);
         buffer_presenter_destroy(output->buffer_presenter);
-        return onSurfaceCreated(in_xdgToplevel, in_surface);
       }
+      return onSurfaceCreated(in_nativePtr, in_nativePtrType, in_surface);
     }
 
-    ::ndk::ScopedAStatus onSurfaceCreated(const XdgTopLevel &in_xdgToplevel, const ::aidl::android::view::Surface& in_surface) override {
+    ::ndk::ScopedAStatus onSurfaceCreated(int64_t in_nativePtr, ::aidl::com::xtr::tinywl::NativePtrType in_nativePtrType, const ::aidl::android::view::Surface& in_surface) override {
       ANativeWindow *window = in_surface.get();
-      if (in_xdgToplevel.nativePtrType == XdgTopLevel::NativePtrType::VIEW) {
-        struct view *view = reinterpret_cast<struct view *>(in_xdgToplevel.nativePtr);
+      if (in_nativePtrType == NativePtrType::VIEW) {
+        struct view *view = reinterpret_cast<struct view *>(in_nativePtr);
 
         struct wlr_box* geo_box = &view->pending;
 
@@ -81,7 +80,7 @@ namespace tinywl {
         
         view->buffer_presenter = buffer_presenter_create(window);
       } else {
-        struct output *output = reinterpret_cast<struct output *>(in_xdgToplevel.nativePtr);
+        struct output *output = reinterpret_cast<struct output *>(in_nativePtr);
                 wlr_log(WLR_DEBUG, "Setting buffers geometry for ANativeWindow to %dx%d", output->wlr_output->height, output->wlr_output->height);
         int ret = ANativeWindow_setBuffersGeometry(window, output->wlr_output->width, output->wlr_output->height ,AHB_FORMAT_PREFERRED);
         if (ret != 0) {
@@ -93,13 +92,13 @@ namespace tinywl {
       return ::ndk::ScopedAStatus::ok();
     }
 
-    ::ndk::ScopedAStatus onSurfaceDestroyed(const XdgTopLevel &in_xdgToplevel) override {
-      if (in_xdgToplevel.nativePtrType == XdgTopLevel::NativePtrType::VIEW) {
-        struct view *view = reinterpret_cast<struct view *>(in_xdgToplevel.nativePtr);
+    ::ndk::ScopedAStatus onSurfaceDestroyed(int64_t in_nativePtr, ::aidl::com::xtr::tinywl::NativePtrType in_nativePtrType) override {
+      if (in_nativePtrType == NativePtrType::VIEW) {
+        struct view *view = reinterpret_cast<struct view *>(in_nativePtr);
         buffer_presenter_destroy(view->buffer_presenter);
         view->buffer_presenter = nullptr;
       } else {
-        struct output *output = reinterpret_cast<struct output *>(in_xdgToplevel.nativePtr);
+        struct output *output = reinterpret_cast<struct output *>(in_nativePtr);
         buffer_presenter_destroy(output->buffer_presenter);
         output->buffer_presenter = nullptr;
       }
@@ -141,9 +140,12 @@ namespace tinywl {
             }
           }
           std::lock_guard<std::mutex> lock(thiz->mutex_);
-          thiz->views.emplace(view, XdgTopLevel::NativePtrType::VIEW);
+          thiz->views.emplace(view, NativePtrType::VIEW);
           auto xdgToplevel = newXdgTopLevel(appId, title, (long)view);
-          thiz->mCallback->addXdgTopLevel(xdgToplevel, WlrBox_from_wlr_box(&view->pending));
+
+          thiz->runWhenCallbackAvailable([=] {
+            thiz->mCallback->addXdgTopLevel(xdgToplevel, WlrBox_from_wlr_box(&view->pending));
+          });
         };
 
         server.callbacks.view_remove = [](struct view *view) {
@@ -162,11 +164,12 @@ namespace tinywl {
               }
             }
           }
-
-          thiz->mCallback->removeXdgTopLevel(
-              newXdgTopLevel(appId,
-              title,
-              (long)view));          
+          thiz->runWhenCallbackAvailable([=] {
+            thiz->mCallback->removeXdgTopLevel(
+                newXdgTopLevel(appId,
+                title,
+                (long)view));     
+          });
         };
         
         server.callbacks.view_commit = [](struct view *view) {
@@ -178,6 +181,7 @@ namespace tinywl {
               buffer_presenter_send_buffer(view->buffer_presenter, view->android_buffer->ahb, -1, NULL, NULL);
             } else {
               wlr_log(WLR_ERROR, "Something went wrong with presenting the buffer to Android");
+              assert(view->android_buffer);
             }
           } else {
             wlr_log(WLR_ERROR, "Something went wrong with uploading the buffer");
@@ -188,43 +192,40 @@ namespace tinywl {
         server.callbacks.output_init = [](struct output *output) {
           auto thiz = reinterpret_cast<TinywlMainService *>(output->server->callbacks.data);
           // To be run when mCallback is available
-          auto task = [thiz, output] {
-            thiz->mCallback->addXdgTopLevel(newXdgTopLevelWithType("output-" + std::to_string(output->id_bit), "Output", (long)output, XdgTopLevel::NativePtrType::OUTPUT), WlrBox_from_wlr_box(nullptr));           
-          };
-          if (!thiz->mCallback)
-            // Push to queue to be run later when mCallback is available
-            thiz->mTaskQueue.push(task);
-          else 
-            // Execute task now
-            task();
+          thiz->runWhenCallbackAvailable([thiz, output] {
+            thiz->mCallback->addXdgTopLevel(newXdgTopLevelWithType("output-" + std::to_string(output->id_bit), "Output", (long)output, NativePtrType::OUTPUT), WlrBox_from_wlr_box(nullptr));           
+          });
         };  
 
         server.callbacks.output_destroy = [](struct output *output) {
           auto thiz = reinterpret_cast<TinywlMainService *>(output->server->callbacks.data);
           // To be run when mCallback is available
-          auto task = [thiz, output] {
+          thiz->runWhenCallbackAvailable([thiz, output] {
             thiz->mCallback->removeXdgTopLevel(newXdgTopLevelWithType(
               "output-" + std::to_string(output->id_bit), "Output",
-              (long)output, XdgTopLevel::NativePtrType::OUTPUT));
-          };
-          if (!thiz->mCallback)
-            // Push to queue to be run later when mCallback is available
-            thiz->mTaskQueue.push(task);
-          else 
-            // Execute task now
-            task();
+              (long)output, NativePtrType::OUTPUT));
+          });
         };
     }
-
+    
     const std::shared_ptr<TinywlInputService> mInputService = ndk::SharedRefBase::make<tinywl::TinywlInputService>();
     std::shared_ptr<ITinywlXdgTopLevelCallback> mCallback;
-
+    
     struct server server;
     std::queue<std::function<void()>> mTaskQueue;
-
-  private:
+    
+    private:
+      void runWhenCallbackAvailable(std::function<void()> task) {
+        if (!mCallback)
+          // Push to queue to be run later when mCallback is available
+          mTaskQueue.push(std::move(task));
+        else 
+          // Execute task now
+          task();
+      }
+      
       std::mutex &mutex_ = mInputService->mutex_;
-      std::map<void *, XdgTopLevel::NativePtrType> &views = mInputService->views;
+      std::map<void *, NativePtrType> &views = mInputService->views;
   };  // class TinywlMainService
 
 }  // namespace tinywl
@@ -290,7 +291,8 @@ Java_com_xtr_tinywl_Tinywl_nativeRegisterXdgTopLevelCallback(JNIEnv *env, jclass
     const ::ndk::SpAIBinder spBinder(pBinder);
     gService->mCallback = aidl::com::xtr::tinywl::ITinywlXdgTopLevelCallback::fromBinder(spBinder);
     wlr_log(WLR_INFO, "Registered callback");
-    
+                                                            
+    // Tasks queued to run when mCallback is available
     while (!gService->mTaskQueue.empty()) {
       /* Execute task and remove it from the queue */
       auto task = gService->mTaskQueue.front(); 

@@ -1,7 +1,7 @@
 #include "aidl/android/hardware/input/common/Axis.h"
 #include "aidl/android/hardware/input/common/MotionEvent.h"
 #include "aidl/com/android/server/inputflinger/KeyEvent.h"
-#include "aidl_source_output_dir/debug/out/aidl/com/xtr/tinywl/XdgTopLevel.h"
+#include "aidl/com/xtr/tinywl/NativePtrType.h"
 #include <aidl/tinywl/BnTinywlInput.h>
 #include <android/keycodes.h>
 #include <cstdint>
@@ -88,10 +88,10 @@ namespace tinywl {
       wl_signal_emit_mutable(&pointer.events.frame, &pointer);
     }
 
-    void TinywlInputService::sendPointerPosition(const MotionEvent& in_event, const aidl::com::xtr::tinywl::XdgTopLevel::NativePtrType& nativePtrType, void *view) {
+    void TinywlInputService::sendPointerPosition(const MotionEvent& in_event, const NativePtrType& nativePtrType, void *view) {
       float x = PointerCoords_getAxisValue(in_event.pointerCoords.front(), static_cast<int32_t>(Axis::X));
       float y = PointerCoords_getAxisValue(in_event.pointerCoords.front(), static_cast<int32_t>(Axis::Y));
-      if (nativePtrType == XdgTopLevel::NativePtrType::VIEW) {
+      if (nativePtrType == NativePtrType::VIEW) {
         auto l_view = reinterpret_cast<struct view *>(view);  
         x += l_view->current.x;
         y += l_view->current.y;
@@ -104,7 +104,7 @@ namespace tinywl {
         .y=0
       };
 
-      if (nativePtrType == XdgTopLevel::NativePtrType::VIEW) {
+      if (nativePtrType == NativePtrType::VIEW) {
         auto l_view = reinterpret_cast<struct view *>(view);  
         wlr_event.x = x / l_view->pending.width;
         wlr_event.y = y / l_view->pending.height;

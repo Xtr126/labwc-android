@@ -33,14 +33,14 @@ namespace tinywl {
       struct wlr_keyboard keyboard;
       struct wlr_pointer pointer;
       void sendPointerButtonEvent(const MotionEvent& in_event);
-      void sendPointerPosition(const MotionEvent& in_event, const XdgTopLevel::NativePtrType& nativePtrType, void *view);
+      void sendPointerPosition(const MotionEvent& in_event, const NativePtrType& nativePtrType, void *view);
       void sendScrollEvent(const MotionEvent& in_event);
       TinywlInputServiceQueue<MotionEvent> motionEventQueue;
       TinywlInputServiceQueue<KeyEvent> keyEventQueue;
       struct wl_listener event_loop_destroy;
       int event_fd;
       mutable std::mutex mutex_;
-      std::map<void *, XdgTopLevel::NativePtrType> views;
+      std::map<void *, NativePtrType> views;
 
 
     private:

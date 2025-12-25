@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Using: /home/hp/Android/Sdk/build-tools/35.0.0/aidl --lang=ndk -o/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -h/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/debug/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/cpp/aidl -d/tmp/aidl3252360008859553080.d /home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl/com/xtr/tinywl/ITinywlSurface.aidl
+ * Using: /home/hp/Android/Sdk/build-tools/35.0.0/aidl --lang=ndk -o/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -h/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/debug/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/cpp/aidl -d/tmp/aidl6268573902068650385.d /home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl/com/xtr/tinywl/ITinywlSurface.aidl
  */
 #pragma once
 
@@ -11,14 +11,11 @@
 #include <vector>
 #include <android/binder_interface_utils.h>
 #include <android/native_window_aidl.h>
-#include <aidl/com/xtr/tinywl/XdgTopLevel.h>
+#include <aidl/com/xtr/tinywl/NativePtrType.h>
 #ifdef BINDER_STABILITY_SUPPORT
 #include <android/binder_stability.h>
 #endif  // BINDER_STABILITY_SUPPORT
 
-namespace aidl::com::xtr::tinywl {
-class XdgTopLevel;
-}  // namespace aidl::com::xtr::tinywl
 namespace aidl {
 namespace com {
 namespace xtr {
@@ -41,17 +38,17 @@ public:
   static binder_status_t readFromParcel(const AParcel* parcel, std::shared_ptr<ITinywlSurface>* instance);
   static bool setDefaultImpl(const std::shared_ptr<ITinywlSurface>& impl);
   static const std::shared_ptr<ITinywlSurface>& getDefaultImpl();
-  virtual ::ndk::ScopedAStatus onSurfaceCreated(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgToplevel, const ::aidl::android::view::Surface& in_surface) = 0;
-  virtual ::ndk::ScopedAStatus onSurfaceChanged(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgToplevel, const ::aidl::android::view::Surface& in_surface) = 0;
-  virtual ::ndk::ScopedAStatus onSurfaceDestroyed(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgToplevel) = 0;
+  virtual ::ndk::ScopedAStatus onSurfaceCreated(int64_t in_nativePtr, ::aidl::com::xtr::tinywl::NativePtrType in_nativePtrType, const ::aidl::android::view::Surface& in_surface) = 0;
+  virtual ::ndk::ScopedAStatus onSurfaceChanged(int64_t in_nativePtr, ::aidl::com::xtr::tinywl::NativePtrType in_nativePtrType, const ::aidl::android::view::Surface& in_surface) = 0;
+  virtual ::ndk::ScopedAStatus onSurfaceDestroyed(int64_t in_nativePtr, ::aidl::com::xtr::tinywl::NativePtrType in_nativePtrType) = 0;
 private:
   static std::shared_ptr<ITinywlSurface> default_impl;
 };
 class ITinywlSurfaceDefault : public ITinywlSurface {
 public:
-  ::ndk::ScopedAStatus onSurfaceCreated(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgToplevel, const ::aidl::android::view::Surface& in_surface) override;
-  ::ndk::ScopedAStatus onSurfaceChanged(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgToplevel, const ::aidl::android::view::Surface& in_surface) override;
-  ::ndk::ScopedAStatus onSurfaceDestroyed(const ::aidl::com::xtr::tinywl::XdgTopLevel& in_xdgToplevel) override;
+  ::ndk::ScopedAStatus onSurfaceCreated(int64_t in_nativePtr, ::aidl::com::xtr::tinywl::NativePtrType in_nativePtrType, const ::aidl::android::view::Surface& in_surface) override;
+  ::ndk::ScopedAStatus onSurfaceChanged(int64_t in_nativePtr, ::aidl::com::xtr::tinywl::NativePtrType in_nativePtrType, const ::aidl::android::view::Surface& in_surface) override;
+  ::ndk::ScopedAStatus onSurfaceDestroyed(int64_t in_nativePtr, ::aidl::com::xtr::tinywl::NativePtrType in_nativePtrType) override;
   ::ndk::SpAIBinder asBinder() override;
   bool isRemote() override;
 };
