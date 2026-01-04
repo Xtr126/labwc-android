@@ -57,8 +57,8 @@ namespace tinywl {
     void TinywlInputService::sendPointerButtonEvent(const MotionEvent& in_event) {
       struct wlr_pointer_button_event wlr_event = {
           .pointer = &pointer,
-          .time_msec = (uint32_t)in_event.eventTime,
-          .button = AKEYCODE_BUTTON_1,
+          .time_msec = (uint32_t)in_event.downTime,
+          .button = 0,
           .state = WL_POINTER_BUTTON_STATE_PRESSED,
       };
 
