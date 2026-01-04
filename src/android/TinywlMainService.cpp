@@ -2,26 +2,14 @@
 #include <android/binder_ibinder_jni.h>
 #include "TinywlInputService.hpp"
 #include "aidl/com/xtr/tinywl/TinywlXdgTopLevelCallback.h"
-#include "aidl/com/xtr/tinywl/WlrBox.h"
-#include "aidl/com/xtr/tinywl/XdgTopLevel.h"
-#include "android/binder_auto_utils.h"
-#include "android/binder_interface_utils.h"
-#include "android/native_window.h"
-#include "buffer_presenter.h"
-#include <android/looper.h>
 #include <assert.h>
-#include <cassert>
 #include <queue>
 
 extern "C" {
   #include "ahb_wlr_allocator.h"
-  #include "labwc.h"
   #include "theme.h"
-  #include "view.h"
-  #include <wlr/util/log.h>
   #include <wlr/types/wlr_xdg_shell.h>
   #include <wlr/render/drm_format_set.h>
-  #include "client_renderer.h"
 }
 
 namespace tinywl {
@@ -97,6 +85,8 @@ namespace tinywl {
         struct view *view = reinterpret_cast<struct view *>(in_nativePtr);
         buffer_presenter_destroy(view->buffer_presenter);
         view->buffer_presenter = nullptr;
+        wlr_buffer_drop(&view->android_buffer->base);
+        view->android_buffer = nullptr;
       } else {
         struct output *output = reinterpret_cast<struct output *>(in_nativePtr);
         buffer_presenter_destroy(output->buffer_presenter);
@@ -172,22 +162,8 @@ namespace tinywl {
           });
         };
         
-        server.callbacks.view_commit = [](struct view *view) {
-          if (view->surface->buffer != NULL) {
-            if (view->buffer_presenter != NULL) {
-              struct wlr_buffer *src_buffer = &view->surface->buffer->base;
-              struct wlr_buffer *dst_buffer = &view->android_buffer->base;
-              render_client_buffer_to_buffer(view->server->renderer, src_buffer, dst_buffer);
-              buffer_presenter_send_buffer(view->buffer_presenter, view->android_buffer->ahb, -1, NULL, NULL);
-            } else {
-              wlr_log(WLR_ERROR, "Something went wrong with presenting the buffer to Android");
-              assert(view->android_buffer);
-            }
-          } else {
-            wlr_log(WLR_ERROR, "Something went wrong with uploading the buffer");
-          }             
-        };
-
+        server.callbacks.view_commit = android_view_present_buffer;
+        
         server.callbacks.output_commit = android_output_present_buffer;
         server.callbacks.output_init = [](struct output *output) {
           auto thiz = reinterpret_cast<TinywlMainService *>(output->server->callbacks.data);
