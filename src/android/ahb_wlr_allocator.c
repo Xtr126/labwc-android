@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdlib.h>
+#include <time.h>
 #include <wlr/interfaces/wlr_buffer.h>
 #include <wlr/util/log.h>
 #include "ahb_wlr_allocator.h"
@@ -11,6 +12,15 @@ struct wlr_ahb_buffer *get_ahb_buffer_from_buffer(struct wlr_buffer *wlr_buffer)
 	assert(wlr_buffer->impl == &buffer_impl);
 	struct wlr_ahb_buffer *buffer = wl_container_of(wlr_buffer, buffer, base);
 	return buffer;
+}
+
+struct wlr_ahb_buffer *try_get_ahb_buffer_from_buffer(struct wlr_buffer *wlr_buffer) {
+	if (wlr_buffer->impl == &buffer_impl) {
+		struct wlr_ahb_buffer *buffer = wl_container_of(wlr_buffer, buffer, base);
+		return buffer;
+	} else {
+		return NULL;
+	}
 }
 
 static struct wlr_ahb_buffer *create_buffer(struct wlr_ahb_allocator *alloc,
