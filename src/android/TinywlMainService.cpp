@@ -191,6 +191,7 @@ namespace tinywl {
         server.callbacks.output_commit = android_output_present_buffer;
         server.callbacks.output_init = [](struct output *output) {
           auto thiz = reinterpret_cast<TinywlMainService *>(output->server->callbacks.data);
+          thiz->views.emplace(output, NativePtrType::OUTPUT);
           // To be run when mCallback is available
           thiz->runWhenCallbackAvailable([thiz, output] {
             thiz->mCallback->addXdgTopLevel(newXdgTopLevelWithType("output-" + std::to_string(output->id_bit), "Output", (long)output, NativePtrType::OUTPUT), WlrBox_from_wlr_box(nullptr));           
@@ -199,6 +200,7 @@ namespace tinywl {
 
         server.callbacks.output_destroy = [](struct output *output) {
           auto thiz = reinterpret_cast<TinywlMainService *>(output->server->callbacks.data);
+          thiz->views.erase(output);
           // To be run when mCallback is available
           thiz->runWhenCallbackAvailable([thiz, output] {
             thiz->mCallback->removeXdgTopLevel(newXdgTopLevelWithType(
