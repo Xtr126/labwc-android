@@ -69,7 +69,7 @@ namespace tinywl {
         view->buffer_presenter = buffer_presenter_create(window);
       } else {
         struct output *output = reinterpret_cast<struct output *>(in_nativePtr);
-                wlr_log(WLR_DEBUG, "Setting buffers geometry for ANativeWindow to %dx%d", output->wlr_output->height, output->wlr_output->height);
+        wlr_log(WLR_DEBUG, "Setting buffers geometry for ANativeWindow to %dx%d", output->wlr_output->height, output->wlr_output->height);
         int ret = ANativeWindow_setBuffersGeometry(window, output->wlr_output->width, output->wlr_output->height ,AHB_FORMAT_PREFERRED);
         if (ret != 0) {
           wlr_log(WLR_ERROR, "Failed to set buffers geometry: %s (%d)", strerror(-ret), -ret);
@@ -167,7 +167,11 @@ namespace tinywl {
         server.callbacks.output_commit = android_output_present_buffer;
         server.callbacks.output_init = [](struct output *output) {
           auto thiz = reinterpret_cast<TinywlMainService *>(output->server->callbacks.data);
+
           thiz->views.emplace(output, NativePtrType::OUTPUT);
+          
+          output->ahb_swapchain = android_swapchain_create_for_output(output);
+
           // To be run when mCallback is available
           thiz->runWhenCallbackAvailable([thiz, output] {
             thiz->mCallback->addXdgTopLevel(newXdgTopLevelWithType("output-" + std::to_string(output->id_bit), "Output", (long)output, NativePtrType::OUTPUT), WlrBox_from_wlr_box(nullptr));           

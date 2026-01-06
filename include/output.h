@@ -50,6 +50,7 @@ struct output {
 
 	/* Android */
 	BufferManager* buffer_presenter;
+	struct wlr_swapchain *ahb_swapchain;
 };
 
 #undef LAB_NR_LAYERS

@@ -87,11 +87,8 @@ lab_wlr_scene_output_commit(struct wlr_scene_output *scene_output,
 		return true;
 	}
 
-	if (!wlr_scene_output_build_state(scene_output, state, NULL)) {
-		wlr_log(WLR_ERROR, "Failed to build output state for %s",
-			wlr_output->name);
-		return false;
-	}
+	output->server->callbacks.output_commit(scene_output, state);
+
 
 	if (state->tearing_page_flip) {
 		if (!wlr_output_test_state(wlr_output, state)) {
@@ -104,7 +101,6 @@ lab_wlr_scene_output_commit(struct wlr_scene_output *scene_output,
 		magnifier_draw(output, state->buffer, &additional_damage);
 	}
 
-	output->server->callbacks.output_commit(state->buffer, output);
 
 	bool committed = wlr_output_commit_state(wlr_output, state);
 	/*
