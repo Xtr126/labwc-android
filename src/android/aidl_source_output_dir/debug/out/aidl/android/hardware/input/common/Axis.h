@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Using: /home/hp/Android/Sdk/build-tools/35.0.0/aidl --lang=ndk -o/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -h/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/debug/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/cpp/aidl -d/tmp/aidl6787564582069511074.d /home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/cpp/aidl/android/hardware/input/common/Axis.aidl
+ * Using: /home/hp/Android/Sdk/build-tools/35.0.0/aidl --lang=ndk -o/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -h/home/hp/Desktop/wlroots-android-bridge/tinywl/build/generated/aidl_source_output_dir/debug/out/ndk -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/debug/aidl -I/home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/cpp/aidl -d/tmp/aidl10256290632950055991.d /home/hp/Desktop/wlroots-android-bridge/tinywl/src/main/cpp/aidl/android/hardware/input/common/Axis.aidl
  */
 #pragma once
 
@@ -66,6 +66,7 @@ enum class Axis : int32_t {
   GENERIC_14 = 45,
   GENERIC_15 = 46,
   GENERIC_16 = 47,
+  CAPTION_BAR_HEIGHT = 48,
 };
 
 }  // namespace common
@@ -170,6 +171,8 @@ namespace common {
     return "GENERIC_15";
   case Axis::GENERIC_16:
     return "GENERIC_16";
+  case Axis::CAPTION_BAR_HEIGHT:
+    return "CAPTION_BAR_HEIGHT";
   default:
     return std::to_string(static_cast<int32_t>(val));
   }
@@ -184,7 +187,7 @@ namespace internal {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wc++17-extensions"
 template <>
-constexpr inline std::array<aidl::android::hardware::input::common::Axis, 45> enum_values<aidl::android::hardware::input::common::Axis> = {
+constexpr inline std::array<aidl::android::hardware::input::common::Axis, 46> enum_values<aidl::android::hardware::input::common::Axis> = {
   aidl::android::hardware::input::common::Axis::X,
   aidl::android::hardware::input::common::Axis::Y,
   aidl::android::hardware::input::common::Axis::PRESSURE,
@@ -230,6 +233,7 @@ constexpr inline std::array<aidl::android::hardware::input::common::Axis, 45> en
   aidl::android::hardware::input::common::Axis::GENERIC_14,
   aidl::android::hardware::input::common::Axis::GENERIC_15,
   aidl::android::hardware::input::common::Axis::GENERIC_16,
+  aidl::android::hardware::input::common::Axis::CAPTION_BAR_HEIGHT,
 };
 #pragma clang diagnostic pop
 }  // namespace internal

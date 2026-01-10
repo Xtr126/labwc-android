@@ -91,6 +91,7 @@ namespace tinywl {
     void TinywlInputService::sendPointerPosition(const MotionEvent& in_event, const NativePtrType& nativePtrType, void *view) {
       float x = PointerCoords_getAxisValue(in_event.pointerCoords.front(), static_cast<int32_t>(Axis::X));
       float y = PointerCoords_getAxisValue(in_event.pointerCoords.front(), static_cast<int32_t>(Axis::Y));
+      y -= PointerCoords_getAxisValue(in_event.pointerCoords.front(), static_cast<int32_t>(Axis::CAPTION_BAR_HEIGHT));
       if (nativePtrType == NativePtrType::VIEW) {
         auto l_view = reinterpret_cast<struct view *>(view);  
         x += l_view->current.x;
