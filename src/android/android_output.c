@@ -18,6 +18,7 @@ void android_output_present_buffer(struct wlr_scene_output *scene_output,
 	if (output->buffer_presenter && output->ahb_swapchain) {
 		struct wlr_scene_output_state_options options = {0};
 		options.swapchain = output->ahb_swapchain;
+		
 		if (!wlr_scene_output_build_state(scene_output, state, &options)) {
 			wlr_log(WLR_ERROR, "Failed to build output state for %s",
 				wlr_output->name);
@@ -49,39 +50,35 @@ void android_view_present_buffer(struct view *view) {
 	}             
 }
 
-static bool wlr_drm_format_copy(struct wlr_drm_format *dst, const struct wlr_drm_format *src) {
-	assert(src->len <= src->capacity);
-
-	uint64_t *modifiers = (uint64_t *)malloc(sizeof(*modifiers) * src->len);
-	if (!modifiers) {
-		return false;
-	}
-
-	memcpy(modifiers, src->modifiers, sizeof(*modifiers) * src->len);
-
-	wlr_drm_format_finish(dst);
-	dst->capacity = src->len;
-	dst->len = src->len;
-	dst->format = src->format;
-	dst->modifiers = modifiers;
-	return true;
-}
-
-
 struct wlr_swapchain *android_swapchain_create_for_output(struct output *output) {
 	struct wlr_swapchain *swapchain = (struct wlr_swapchain *)calloc(1, sizeof(*swapchain));
 	if (swapchain == NULL) {
 		return NULL;
 	}
 	swapchain->allocator = NULL;
-	swapchain->width = output->wlr_output->width;
-	swapchain->height = output->wlr_output->height;
+	
+	if (output->pending.committed & WLR_OUTPUT_STATE_MODE) {
+		switch (output->pending.mode_type) {
+			case WLR_OUTPUT_STATE_MODE_FIXED:
+				swapchain->width = output->pending.mode->width;
+				swapchain->height = output->pending.mode->height;
+				break;
+			case WLR_OUTPUT_STATE_MODE_CUSTOM:
+				swapchain->width = output->pending.custom_mode.width;
+				swapchain->height = output->pending.custom_mode.height;
+				break;
+		}
+	} else {
+		swapchain->width = output->wlr_output->width;
+		swapchain->height = output->wlr_output->height;
+	}
+
 
 	swapchain->format = (const struct wlr_drm_format){ AHB_FORMAT_PREFERRED_DRM };
 
 	struct wlr_swapchain_slot *slot = &swapchain->slots[0];
 	slot->acquired = false;
-	slot->buffer = wlr_allocator_create_buffer(output->server->allocator, output->wlr_output->width, output->wlr_output->height, &swapchain->format);
+	slot->buffer = wlr_allocator_create_buffer(output->server->allocator, swapchain->width, swapchain->height, &swapchain->format);
 
 	if (slot->buffer == NULL) {
 		wlr_log(WLR_ERROR, "Failed to create AHB swapchain");

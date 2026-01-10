@@ -55,26 +55,31 @@ namespace tinywl {
 
     ::ndk::ScopedAStatus onSurfaceCreated(int64_t in_nativePtr, ::aidl::com::xtr::tinywl::NativePtrType in_nativePtrType, const ::aidl::android::view::Surface& in_surface) override {
       ANativeWindow *window = in_surface.get();
+      int ret = ANativeWindow_setBuffersGeometry(window, 0, 0 ,AHB_FORMAT_PREFERRED);
+      if (ret != 0) {
+        wlr_log(WLR_ERROR, "Failed to set buffers geometry: %s (%d)", strerror(-ret), -ret);
+      }
+
       if (in_nativePtrType == NativePtrType::VIEW) {
         struct view *view = reinterpret_cast<struct view *>(in_nativePtr);
+        // Resize view
+        struct wlr_box newgeo = view->pending;
+        newgeo.width = ANativeWindow_getWidth(window);
+        newgeo.height = ANativeWindow_getHeight(window);
+        view_move_resize(view, newgeo);
 
-        struct wlr_box* geo_box = &view->pending;
-
-        wlr_log(WLR_DEBUG, "Setting buffers geometry for ANativeWindow to %dx%d", geo_box->width, geo_box->height);
-        int ret = ANativeWindow_setBuffersGeometry(window, geo_box->width, geo_box->height ,AHB_FORMAT_PREFERRED);
-        if (ret != 0) {
-          wlr_log(WLR_ERROR, "Failed to set buffers geometry: %s (%d)", strerror(-ret), -ret);
-        }
-        
         view->buffer_presenter = buffer_presenter_create(window);
       } else {
         struct output *output = reinterpret_cast<struct output *>(in_nativePtr);
-        wlr_log(WLR_DEBUG, "Setting buffers geometry for ANativeWindow to %dx%d", output->wlr_output->height, output->wlr_output->height);
-        int ret = ANativeWindow_setBuffersGeometry(window, output->wlr_output->width, output->wlr_output->height ,AHB_FORMAT_PREFERRED);
-        if (ret != 0) {
-          wlr_log(WLR_ERROR, "Failed to set buffers geometry: %s (%d)", strerror(-ret), -ret);
-        }
         
+        // Resize output
+        int width = ANativeWindow_getWidth(window);
+        int height = ANativeWindow_getHeight(window);
+        wlr_output_state_set_custom_mode(&output->pending, width, height,
+          output->wlr_output->refresh);
+          
+        output->ahb_swapchain = android_swapchain_create_for_output(output);
+
         output->buffer_presenter = buffer_presenter_create(window);
       }
       return ::ndk::ScopedAStatus::ok();
@@ -170,11 +175,14 @@ namespace tinywl {
 
           thiz->views.emplace(output, NativePtrType::OUTPUT);
           
-          output->ahb_swapchain = android_swapchain_create_for_output(output);
-
           // To be run when mCallback is available
           thiz->runWhenCallbackAvailable([thiz, output] {
-            thiz->mCallback->addXdgTopLevel(newXdgTopLevelWithType("output-" + std::to_string(output->id_bit), "Output", (long)output, NativePtrType::OUTPUT), WlrBox_from_wlr_box(nullptr));           
+            WlrBox wlrBox;
+            wlrBox.x = 0;
+            wlrBox.y = 0;
+            wlrBox.width = output->wlr_output->width;
+            wlrBox.height = output->wlr_output->height;
+            thiz->mCallback->addXdgTopLevel(newXdgTopLevelWithType("output-" + std::to_string(output->id_bit), "Output", (long)output, NativePtrType::OUTPUT), wlrBox);           
           });
         };  
 
