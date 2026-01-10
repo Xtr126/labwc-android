@@ -22,7 +22,7 @@ struct wlr_ahb_allocator {
 /**
  * Creates a new allocator for AHardwareBuffers.
  */
-struct wlr_allocator *wlr_ahb_allocator_create();
+struct wlr_allocator *wlr_ahb_allocator_create(void);
 
 struct wlr_ahb_buffer *get_ahb_buffer_from_buffer(struct wlr_buffer *wlr_buffer);
 

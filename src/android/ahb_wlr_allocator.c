@@ -83,7 +83,7 @@ static struct wlr_ahb_allocator *get_ahb_alloc_from_alloc(
 	return alloc;
 }
 
-struct wlr_allocator *wlr_ahb_allocator_create() {
+struct wlr_allocator *wlr_ahb_allocator_create(void) {
 
 	struct wlr_ahb_allocator *alloc = calloc(1, sizeof(*alloc));
 	if (alloc == NULL) {
