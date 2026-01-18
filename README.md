@@ -1,3 +1,6 @@
+# labwc-android
+Integrates labwc with Android's native windowing system, allowing Wayland applications to render on Android devices along with https://github.com/Xtr126/wlroots-android-bridge
+
 # labwc
 
 <h3 align="center">[<a
