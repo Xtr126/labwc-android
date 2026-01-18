@@ -16,6 +16,12 @@ void android_output_present_buffer(struct wlr_scene_output *scene_output,
 	struct output *output = wlr_output->data;
 
 	if (output->buffer_presenter && output->ahb_swapchain) {
+		if (output->ahb_swapchain->width != output->wlr_output->width ||
+				output->ahb_swapchain->height != output->wlr_output->height) {
+			wlr_log(WLR_ERROR, "Output resolution and buffer size mismatch, skipping render for now");
+			return;
+		}
+
 		struct wlr_scene_output_state_options options = {0};
 		options.swapchain = output->ahb_swapchain;
 		
