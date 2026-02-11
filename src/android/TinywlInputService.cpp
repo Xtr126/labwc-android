@@ -121,19 +121,27 @@ namespace tinywl {
     }
 
     void TinywlInputService::sendScrollEvent(const MotionEvent& in_event) {
-      float delta = PointerCoords_getAxisValue(in_event.pointerCoords.front(), static_cast<int32_t>(Axis::Y));
+      float delta_v = PointerCoords_getAxisValue(in_event.pointerCoords.front(), static_cast<int32_t>(Axis::VSCROLL));
+      float delta_h = PointerCoords_getAxisValue(in_event.pointerCoords.front(), static_cast<int32_t>(Axis::HSCROLL));
       struct wlr_pointer_axis_event wlr_event = {
         .pointer = &pointer,
         .time_msec = static_cast<uint32_t>(in_event.eventTime),
         .source = WL_POINTER_AXIS_SOURCE_WHEEL,
         .orientation = WL_POINTER_AXIS_VERTICAL_SCROLL,
-        .delta = delta,
-        .delta_discrete = static_cast<int32_t>(delta * WLR_POINTER_AXIS_DISCRETE_STEP),
+        .relative_direction = WL_POINTER_AXIS_RELATIVE_DIRECTION_IDENTICAL,
+        .delta = -delta_v,
+        .delta_discrete = static_cast<int32_t>(-delta_v * WLR_POINTER_AXIS_DISCRETE_STEP),
       };
       
       wl_signal_emit_mutable(&pointer.events.axis, &wlr_event);
+      
+      wlr_event.delta = delta_h;
+      wlr_event.delta_discrete = WLR_POINTER_AXIS_DISCRETE_STEP;
+      wlr_event.orientation = WL_POINTER_AXIS_HORIZONTAL_SCROLL;
+      wlr_event.relative_direction = WL_POINTER_AXIS_RELATIVE_DIRECTION_IDENTICAL;
+      wl_signal_emit_mutable(&pointer.events.axis, &wlr_event);
+      
       wl_signal_emit_mutable(&pointer.events.frame, &pointer);
-
     }
 
     ::ndk::ScopedAStatus TinywlInputService::onKeyEvent(const KeyEvent& in_event, long in_nativePtr, bool* _aidl_return) {
@@ -227,7 +235,6 @@ namespace tinywl {
                 wlr_event.state = WL_KEYBOARD_KEY_STATE_RELEASED;
                 break;
             default:
-                // Skip other actions like AKEY_EVENT_ACTION_MULTIPLE
                 continue;
           }
 
