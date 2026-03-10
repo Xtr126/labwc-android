@@ -107,8 +107,8 @@ namespace tinywl {
 
       if (nativePtrType == NativePtrType::VIEW) {
         auto l_view = reinterpret_cast<struct view *>(view);  
-        wlr_event.x = x / l_view->pending.width;
-        wlr_event.y = y / l_view->pending.height;
+        wlr_event.x = x / l_view->output->wlr_output->width;
+        wlr_event.y = y / l_view->output->wlr_output->height;
       } else {
         auto output = reinterpret_cast<struct output *>(view);  
         wlr_event.x = x / output->wlr_output->width;
