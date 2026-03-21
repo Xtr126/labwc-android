@@ -87,7 +87,7 @@ lab_wlr_scene_output_commit(struct wlr_scene_output *scene_output,
 		return true;
 	}
 
-	output->server->callbacks.output_commit(scene_output, state);
+	output->server->callbacks.output_commit(output, scene_output, state);
 
 
 	if (state->tearing_page_flip) {

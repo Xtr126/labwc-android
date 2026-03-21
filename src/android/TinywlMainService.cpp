@@ -2,6 +2,7 @@
 #include <android/binder_ibinder_jni.h>
 #include "TinywlInputService.hpp"
 #include "aidl/com/xtr/tinywl/TinywlXdgTopLevelCallback.h"
+#include "aidl_source_output_dir/debug/out/aidl/com/xtr/tinywl/NativePtrType.h"
 #include <assert.h>
 #include <queue>
 
@@ -11,6 +12,7 @@ extern "C" {
   #include <wlr/types/wlr_xdg_shell.h>
   #include <wlr/render/drm_format_set.h>
 }
+
 
 namespace tinywl {
 
@@ -40,6 +42,10 @@ namespace tinywl {
     return newXdgTopLevelWithType(in_appId, in_title, in_nativePtr, NativePtrType::VIEW);
   }
 
+  class TinywlMainService;
+
+  static auto gService = ndk::SharedRefBase::make<tinywl::TinywlMainService>();
+
   class TinywlMainService : public BnTinywlSurface {
   public:
     ::ndk::ScopedAStatus onSurfaceChanged(int64_t in_nativePtr, ::aidl::com::xtr::tinywl::NativePtrType in_nativePtrType, const ::aidl::android::view::Surface& in_surface) override {
@@ -67,6 +73,18 @@ namespace tinywl {
         newgeo.width = ANativeWindow_getWidth(window);
         newgeo.height = ANativeWindow_getHeight(window);
         view_move_resize(view, newgeo);
+        
+        // Get the drm_format used by the existing buffer
+        struct wlr_dmabuf_attributes attribs;
+        wlr_buffer_get_dmabuf(&view->android_buffer->base, &attribs);
+        const struct wlr_drm_format format = {attribs.format};
+      
+        // Create new buffer for presenting using the same format and new width/height
+        struct wlr_buffer* buffer = wlr_allocator_create_buffer(view->server->allocator, newgeo.width, newgeo.height, &format);
+        
+        wlr_buffer_drop(&view->android_buffer->base);
+
+        view->android_buffer = get_ahb_buffer_from_buffer(buffer);
 
         view->buffer_presenter = buffer_presenter_create(window);
       } else {
@@ -106,9 +124,9 @@ namespace tinywl {
         server.callbacks.view_add = [](struct view *view) {
 
           if (view->android_buffer == NULL) {
-            assert(view->surface->buffer != NULL);
 
             /* Get the format from the client buffer
+            assert(view->surface->buffer != NULL);
             struct wlr_buffer *client_buffer = &toplevel->xdg_toplevel->base->surface->buffer->base;
             struct wlr_dmabuf_attributes attribs;
             wlr_buffer_get_dmabuf(client_buffer, &attribs);
@@ -117,8 +135,7 @@ namespace tinywl {
             const struct wlr_drm_format format = {AHB_FORMAT_PREFERRED_DRM};
             
             // Create an AHardwareBuffer backed wlr_buffer for presenting
-            struct wlr_box* geo_box = &view->pending;
-            struct wlr_buffer* buffer = wlr_allocator_create_buffer(view->server->allocator, geo_box->width, geo_box->height, &format);
+            struct wlr_buffer* buffer = wlr_allocator_create_buffer(view->server->allocator, view->pending.width, view->pending.height, &format);
             view->android_buffer = get_ahb_buffer_from_buffer(buffer);
           }
 
@@ -167,9 +184,21 @@ namespace tinywl {
           });
         };
         
-        server.callbacks.view_commit = android_view_present_buffer;
+        server.callbacks.view_commit = [](struct view *view) {};
         
-        server.callbacks.output_commit = android_output_present_buffer;
+        server.callbacks.output_commit = [](struct output *output, struct wlr_scene_output *scene_output, struct wlr_output_state *state) {
+            android_output_present_buffer(scene_output, state);
+            
+            // Also render views that are on this output
+            for (auto const& [ptr, type] : gService->views) {
+              if (type == NativePtrType::VIEW) {
+                auto view = reinterpret_cast<struct view *>(ptr);
+                if (view_on_output(view, output)) {
+                  android_view_present_buffer(view);
+                }
+              }
+            }
+        };
         server.callbacks.output_init = [](struct output *output) {
           auto thiz = reinterpret_cast<TinywlMainService *>(output->server->callbacks.data);
 
@@ -217,10 +246,9 @@ namespace tinywl {
       std::mutex &mutex_ = mInputService->mutex_;
       std::map<void *, NativePtrType> &views = mInputService->views;
   };  // class TinywlMainService
-
 }  // namespace tinywl
 
-static auto gService = ndk::SharedRefBase::make<tinywl::TinywlMainService>();
+using namespace tinywl;
 
 extern "C"
 JNIEXPORT void JNICALL
