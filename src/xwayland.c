@@ -848,6 +848,7 @@ handle_map(struct wl_listener *listener, void *data)
 	}
 
 	view_impl_map(view);
+	view->server->callbacks.view_add(view);
 	view->been_mapped = true;
 }
 
@@ -859,6 +860,7 @@ handle_unmap(struct wl_listener *listener, void *data)
 		return;
 	}
 	view->mapped = false;
+	view->server->callbacks.view_remove(view);
 	view_impl_unmap(view);
 
 	/*
